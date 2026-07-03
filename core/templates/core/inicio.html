@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Início - CAI{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">Início</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+  <a href="{% url 'comunicados:novo' %}" class="block bg-slate-900 text-white rounded-lg p-4 hover:bg-slate-800">
+    <p class="font-semibold">Novo Comunicado</p>
+    <p class="text-sm text-slate-300">Formulário para novo comunicado</p>
+  </a>
+  <a href="{% url 'comunicados:listar_abertos' %}" class="block bg-white border rounded-lg p-4 hover:bg-slate-100">
+    <p class="font-semibold">Comunicados Abertos</p>
+    <p class="text-sm text-slate-500">Lista de todos os comunicados abertos</p>
+  </a>
+</div>
+
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  <div class="bg-white border rounded-lg p-4">
+    <p class="text-sm text-slate-500">Comunicados abertos</p>
+    <p class="text-2xl font-semibold">{{ comunicados_abertos }}</p>
+  </div>
+  <div class="bg-white border rounded-lg p-4">
+    <p class="text-sm text-slate-500">Tarefas abertas</p>
+    <p class="text-2xl font-semibold">{{ tarefas_abertas }}</p>
+  </div>
+  <div class="bg-white border rounded-lg p-4">
+    <p class="text-sm text-slate-500">Ações abertas</p>
+    <p class="text-2xl font-semibold">{{ acoes_abertas }}</p>
+  </div>
+  <div class="bg-white border rounded-lg p-4">
+    <p class="text-sm text-slate-500">Meus comunicados</p>
+    <p class="text-2xl font-semibold">{{ meus_comunicados }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <a href="{% url 'comunicados:meus' %}" class="block bg-white border rounded-lg p-4 hover:bg-slate-100">
+    <p class="font-semibold">Meus Comunicados</p>
+    <p class="text-sm text-slate-500">{{ meus_comunicados }} no total</p>
+  </a>
+  <a href="{% url 'tarefas:minhas_pendentes' %}" class="block bg-white border rounded-lg p-4 hover:bg-slate-100">
+    <p class="font-semibold">Minhas Tarefas Pendentes</p>
+    <p class="text-sm text-slate-500">{{ minhas_tarefas_pendentes }} aguardando resposta</p>
+  </a>
+  <a href="{% url 'acoes:minhas_pendentes' %}" class="block bg-white border rounded-lg p-4 hover:bg-slate-100">
+    <p class="font-semibold">Minhas Ações Pendentes</p>
+    <p class="text-sm text-slate-500">{{ minhas_acoes_pendentes }} aguardando conclusão</p>
+  </a>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 opacity-60">
+  <div class="block bg-white border rounded-lg p-4">
+    <p class="font-semibold">Tarefas / Ações Abertas</p>
+    <p class="text-sm text-slate-500">Listas completas — em construção</p>
+  </div>
+  <div class="block bg-white border rounded-lg p-4">
+    <p class="font-semibold">Indicadores / Configurações</p>
+    <p class="text-sm text-slate-500">Em construção</p>
+  </div>
+</div>
+{% endblock %}

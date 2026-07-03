@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Comunicados - CAI{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-semibold">Comunicados</h1>
+  <a href="{% url 'comunicados:listar_abertos' %}" class="text-sm underline">↻ Atualizar</a>
+</div>
+
+<form method="get" class="bg-white border rounded-lg p-4 mb-4 flex flex-wrap items-end gap-3">
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">Cliente</label>
+    <input type="text" name="cliente" value="{{ cliente_buscado }}"
+           class="border rounded px-3 py-2 text-sm" placeholder="Buscar por cliente">
+  </div>
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">Status</label>
+    <select name="status" class="border rounded px-3 py-2 text-sm">
+      <option value="">Todos</option>
+      {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if status_selecionado == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="bg-slate-900 text-white rounded px-4 py-2 text-sm">Filtrar</button>
+</form>
+
+<div class="bg-white border rounded-lg overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left border-b bg-slate-50">
+        <th class="p-3">Número do CAI</th>
+        <th class="p-3">Data de Emissão</th>
+        <th class="p-3">Cliente</th>
+        <th class="p-3">Número</th>
+        <th class="p-3">Introdução/Alteração</th>
+        <th class="p-3">Solicitante do CAI</th>
+        <th class="p-3">Status</th>
+        <th class="p-3">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for comunicado in page_obj %}
+        <tr class="border-b hover:bg-slate-50">
+          <td class="p-3">
+            <a href="{% url 'comunicados:detalhe' comunicado.pk %}" class="underline">{{ comunicado.cai_fiscal }}</a>
+          </td>
+          <td class="p-3">{{ comunicado.data_criacao|date:"d/m/Y" }}</td>
+          <td class="p-3">{{ comunicado.cliente }}</td>
+          <td class="p-3">{{ comunicado.numero_projeto }}</td>
+          <td class="p-3">{{ comunicado.get_tipo_display }}</td>
+          <td class="p-3">{{ comunicado.solicitante }}</td>
+          <td class="p-3">{{ comunicado.get_status_display }}</td>
+          <td class="p-3">
+            {% if comunicado.status == "PENDENTE" %}
+              <form method="post" action="{% url 'comunicados:cancelar' comunicado.pk %}"
+                    onsubmit="return confirm('Tem certeza que deseja cancelar o CAI {{ comunicado.cai_fiscal }}?')">
+                {% csrf_token %}
+                <button type="submit" title="Cancelar" class="text-red-600">✕</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum Comunicado encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page_obj.has_other_pages %}
+  <div class="flex items-center justify-center gap-4 mt-4 text-sm">
+    {% if page_obj.has_previous %}
+      <a class="underline" href="?page={{ page_obj.previous_page_number }}&status={{ status_selecionado }}&cliente={{ cliente_buscado }}">« Anterior</a>
+    {% endif %}
+    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a class="underline" href="?page={{ page_obj.next_page_number }}&status={{ status_selecionado }}&cliente={{ cliente_buscado }}">Próxima »</a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

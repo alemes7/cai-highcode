@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Novo Comunicado - CAI{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">CAI — Comunicado de Alteração / Introdução de Norma</h1>
+
+<form method="post" enctype="multipart/form-data" class="space-y-6 max-w-3xl">
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="bg-red-50 text-red-700 text-sm rounded p-3">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="bg-white border rounded-lg p-6 space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Solicitante</label>
+        <input class="w-full border rounded px-3 py-2 bg-slate-100" type="text"
+               value="{{ request.user.get_full_name|default:request.user.username }}" disabled>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">* {{ form.departamento_solicitante.label }}</label>
+        {{ form.departamento_solicitante }}
+        {{ form.departamento_solicitante.errors }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Data</label>
+        <input class="w-full border rounded px-3 py-2 bg-slate-100" type="text"
+               value="{% now 'd/m/Y' %}" disabled>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">* {{ form.cliente.label }}</label>
+        {{ form.cliente }}
+        {{ form.cliente.errors }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">* {{ form.numero_projeto.label }}</label>
+        {{ form.numero_projeto }}
+        {{ form.numero_projeto.errors }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">* {{ form.tipo.label }}</label>
+        {{ form.tipo }}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">{{ form.data_cai.label }}</label>
+        {{ form.data_cai }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">{{ form.revisao.label }}</label>
+        {{ form.revisao }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">* {{ form.solicitante.label }}</label>
+        {{ form.solicitante }}
+        {{ form.solicitante.errors }}
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">{{ form.comentarios.label }}</label>
+      {{ form.comentarios }}
+    </div>
+  </div>
+
+  <div class="bg-white border rounded-lg p-6 space-y-3">
+    <label class="flex items-center gap-2 text-sm font-medium">
+      {{ form.possui_cai_cancelado }} {{ form.possui_cai_cancelado.label }}
+    </label>
+    <div id="cai-cancelado-wrapper" class="{% if not form.possui_cai_cancelado.value %}hidden{% endif %}">
+      <label class="block text-sm font-medium mb-1">{{ form.cai_cancelado_fiscal.label }}</label>
+      {{ form.cai_cancelado_fiscal }}
+      {{ form.cai_cancelado_fiscal.errors }}
+    </div>
+  </div>
+
+  <div class="bg-white border rounded-lg p-6">
+    <label class="block text-sm font-medium mb-1">{{ form.anexos.label }}</label>
+    {{ form.anexos }}
+  </div>
+
+  <div class="bg-white border rounded-lg p-6">
+    <p class="font-medium mb-1">Tarefas: (Envolver outros departamentos)</p>
+    <p class="text-sm text-slate-500 mb-3">
+      Responsável principal é opcional: se deixar em branco, todos os responsáveis do
+      departamento recebem a tarefa.
+    </p>
+    {% if tarefa_formset.non_form_errors %}
+      <p class="text-red-600 text-sm mb-2">{{ tarefa_formset.non_form_errors.0 }}</p>
+    {% endif %}
+
+    {{ tarefa_formset.management_form }}
+    <div id="tarefas-container">
+      {% for tarefa_form in tarefa_formset %}
+        {% include "comunicados/_tarefa_row.html" %}
+      {% endfor %}
+    </div>
+
+    <button type="button"
+            class="text-sm underline"
+            hx-get="{% url 'comunicados:nova_linha_tarefa' %}"
+            hx-vals='js:{index: document.getElementById("id_tarefas-TOTAL_FORMS").value}'
+            hx-target="#tarefas-container"
+            hx-swap="beforeend">
+      + Adicionar Tarefa/Departamento
+    </button>
+  </div>
+
+  <button type="submit" class="bg-slate-900 text-white rounded px-4 py-2">Enviar</button>
+</form>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Minhas Ações Pendentes - CAI{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">Minhas Ações Pendentes</h1>
+
+<div class="bg-white border rounded-lg divide-y">
+  {% for acao in acoes %}
+    <a href="{% url 'acoes:concluir' acao.pk %}" class="block p-4 hover:bg-slate-50">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="font-medium">{{ acao.comunicado.cai_fiscal }} — {{ acao.descricao }}</p>
+          <p class="text-sm text-slate-500">prazo {{ acao.prazo_efetivo }}</p>
+        </div>
+        <span class="text-sm underline">Concluir</span>
+      </div>
+    </a>
+  {% empty %}
+    <p class="p-4 text-slate-500 text-sm">Nenhuma ação pendente para você.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+from django.apps import AppConfig
+
+
+class ComunicadosConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'comunicados'
+
+    def ready(self):
+        from . import signals  # noqa: F401

@@ -1,0 +1,24 @@
+<div class="tarefa-row relative grid grid-cols-1 md:grid-cols-2 gap-3 border rounded p-4 mb-3">
+  <button type="button"
+          onclick="this.closest('.tarefa-row').remove()"
+          class="absolute top-2 right-2 text-red-600 text-xs underline"
+          title="Remover">
+    Remover
+  </button>
+
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">* Departamento</label>
+    {{ tarefa_form.departamento }}
+  </div>
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">{{ tarefa_form.responsavel_principal.label }}</label>
+    {{ tarefa_form.responsavel_principal }}
+  </div>
+
+  <div class="md:col-span-2 tarefa-info-display text-xs text-slate-500"></div>
+
+  <div class="md:col-span-2">
+    <label class="block text-xs text-slate-500 mb-1">{{ tarefa_form.comentarios.label }}</label>
+    {{ tarefa_form.comentarios }}
+  </div>
+</div>

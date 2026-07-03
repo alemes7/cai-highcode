@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Responder Tarefa - CAI{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">CAI - {{ comunicado.cai_fiscal }} | Tarefa - ID: {{ tarefa.pk }}</h1>
+
+<div class="bg-white border rounded-lg p-6 space-y-4 mb-6 max-w-3xl">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Solicitante</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.solicitante }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Departamento</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.departamento_solicitante }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Data</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.data_criacao|date:"D, j \d\e F \d\e Y" }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Cliente</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.cliente }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Número</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.numero_projeto }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Introdução ou Alteração?</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.get_tipo_display }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Departamento</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ tarefa.departamento }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Status</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ tarefa.get_status_display }}</p>
+    </div>
+  </div>
+
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">Comentários</label>
+    <p class="border rounded px-3 py-2 bg-slate-100 min-h-[2.5rem]">{{ tarefa.comentarios|default:"-" }}</p>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="max-w-3xl space-y-6">
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="bg-red-50 text-red-700 text-sm rounded p-3">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="bg-white border rounded-lg p-6">
+    <label class="block text-sm font-medium mb-1">* {{ form.decisao.label }}</label>
+    {{ form.decisao }}
+    {{ form.decisao.errors }}
+
+    <label class="block text-sm font-medium mt-4 mb-1">{{ form.justificativa.label }}</label>
+    {{ form.justificativa }}
+  </div>
+
+  <div id="acoes-wrapper" class="bg-white border rounded-lg p-6 {% if form.decisao.value != 'APROVADO_COM_ACOES' %}hidden{% endif %}">
+    <p class="font-medium mb-1 text-blue-700 text-center">Ações:</p>
+    {% if acao_formset.non_form_errors %}
+      <p class="text-red-600 text-sm mb-2">{{ acao_formset.non_form_errors.0 }}</p>
+    {% endif %}
+    {{ acao_formset.management_form }}
+    <div id="acoes-container">
+      {% for acao_form in acao_formset %}
+        {% include "tarefas/_acao_row.html" with departamento=tarefa.departamento %}
+      {% endfor %}
+    </div>
+    <button type="button"
+            class="text-sm underline"
+            hx-get="{% url 'tarefas:nova_linha_acao' %}"
+            hx-vals='js:{index: document.getElementById("id_acoes-TOTAL_FORMS").value, tarefa: {{ tarefa.pk }}}'
+            hx-target="#acoes-container"
+            hx-swap="beforeend">
+      + Adicionar Ação
+    </button>
+  </div>
+
+  <div class="bg-white border rounded-lg p-6">
+    <label class="block text-sm font-medium mb-1">
+      * Deseja envolver outro departamento na {{ comunicado.get_tipo_display }} desta norma?
+    </label>
+    {{ form.envolver_outro_departamento }}
+  </div>
+
+  <div id="escalonamento-wrapper" class="bg-white border rounded-lg p-6 {% if form.envolver_outro_departamento.value != 'SIM' %}hidden{% endif %}">
+    <p class="font-medium mb-1 text-blue-700 text-center">Tarefas: (Envolver outros departamentos)</p>
+    {% if escalonamento_formset.non_form_errors %}
+      <p class="text-red-600 text-sm mb-2">{{ escalonamento_formset.non_form_errors.0 }}</p>
+    {% endif %}
+    {{ escalonamento_formset.management_form }}
+    <div id="escalonamento-container">
+      {% for tarefa_form in escalonamento_formset %}
+        {% include "comunicados/_tarefa_row.html" %}
+      {% endfor %}
+    </div>
+    <button type="button"
+            class="text-sm underline"
+            hx-get="{% url 'comunicados:nova_linha_tarefa' %}"
+            hx-vals='js:{index: document.getElementById("id_escalonamento-TOTAL_FORMS").value, prefix: "escalonamento"}'
+            hx-target="#escalonamento-container"
+            hx-swap="beforeend">
+      + Adicionar Tarefa/Departamento
+    </button>
+  </div>
+
+  <div class="bg-white border rounded-lg p-6">
+    <label class="block text-sm font-medium mb-1">{{ form.anexos.label }}</label>
+    {{ form.anexos }}
+  </div>
+
+  <button type="submit" class="bg-slate-900 text-white rounded px-4 py-2">Enviar</button>
+</form>
+{% endblock %}

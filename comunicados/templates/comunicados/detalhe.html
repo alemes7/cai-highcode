@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}{{ comunicado.cai_fiscal }} - CAI{% endblock %}
+{% block content %}
+<div class="flex items-start justify-between mb-6">
+  <h1 class="text-2xl font-semibold">CAI - {{ comunicado.cai_fiscal }} - Comunicado de Alteração / Introdução de Norma</h1>
+  {% if comunicado.status == "PENDENTE" %}
+    <form method="post" action="{% url 'comunicados:cancelar' comunicado.pk %}"
+          onsubmit="return confirm('Tem certeza que deseja cancelar o CAI {{ comunicado.cai_fiscal }}?')">
+      {% csrf_token %}
+      <button type="submit" class="text-sm text-red-600 underline whitespace-nowrap ml-4">Cancelar este CAI</button>
+    </form>
+  {% endif %}
+</div>
+
+<div class="bg-white border rounded-lg p-6 space-y-4 mb-6">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Solicitante</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.solicitante }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Departamento</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.departamento_solicitante }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Data</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.data_criacao|date:"D, j \d\e F \d\e Y" }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Cliente</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.cliente }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Número</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.numero_projeto }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Data</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.data_cai|date:"D, j \d\e F \d\e Y"|default:"-" }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Revisão</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.revisao|default:"-" }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Introdução ou Alteração?</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.get_tipo_display }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Status</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.get_status_display }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Este CAI cancela/substitui algum outro?</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.cancela_comunicado|yesno:"Sim,Não" }}</p>
+    </div>
+    {% if comunicado.cancela_comunicado %}
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">ID CAI</label>
+        <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.cancela_comunicado.cai_fiscal }}</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">Comentários</label>
+    <p class="border rounded px-3 py-2 bg-slate-100 min-h-[3rem]">{{ comunicado.comentarios|default:"-" }}</p>
+  </div>
+
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">Anexos</label>
+    <div class="border rounded p-3 bg-slate-100">
+      {% for anexo in comunicado.anexos.all %}
+        <p><a class="underline" href="{{ anexo.arquivo.url }}">{{ anexo.nome_original }}</a></p>
+      {% empty %}
+        <p class="text-sm text-slate-500">Nenhum arquivo anexado.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<h2 class="text-center text-blue-700 font-medium mb-2">Tarefas:</h2>
+<div class="bg-white border rounded-lg overflow-x-auto mb-6">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left border-b bg-slate-50">
+        <th class="p-3">Departamento</th>
+        <th class="p-3">Responsável Principal</th>
+        <th class="p-3">Status</th>
+        <th class="p-3">Data de Conclusão</th>
+        <th class="p-3">Justificativa</th>
+        <th class="p-3">Observação</th>
+        <th class="p-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tarefa in tarefas %}
+        <tr class="border-b hover:bg-slate-50">
+          <td class="p-3">
+            <a href="{% url 'tarefas:responder' tarefa.pk %}" class="underline text-blue-700">{{ tarefa.departamento }}</a>
+          </td>
+          <td class="p-3">{{ tarefa.responsavel|default:"-" }}</td>
+          <td class="p-3">{{ tarefa.get_status_display }}</td>
+          <td class="p-3">{{ tarefa.data_conclusao|date:"d/m/Y"|default:"-" }}</td>
+          <td class="p-3">{{ tarefa.justificativa|default:"-" }}</td>
+          <td class="p-3">{{ tarefa.observacoes|default:"-" }}</td>
+          <td class="p-3">
+            {% if tarefa.status == "PENDENTE" %}
+              <a href="{% url 'tarefas:responder' tarefa.pk %}" class="text-sm underline">Responder</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="p-4 text-center text-slate-500">Nenhuma tarefa.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if acoes %}
+  <h2 class="text-center text-blue-700 font-medium mb-2">Ações:</h2>
+  <div class="bg-white border rounded-lg overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left border-b bg-slate-50">
+          <th class="p-3">Ação Requerida</th>
+          <th class="p-3">Responsável Principal</th>
+          <th class="p-3">Status</th>
+          <th class="p-3">Prazo</th>
+          <th class="p-3">Observações</th>
+          <th class="p-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for acao in acoes %}
+          <tr class="border-b hover:bg-slate-50">
+            <td class="p-3">{{ acao.descricao }}</td>
+            <td class="p-3">{{ acao.responsavel|default:"-" }}</td>
+            <td class="p-3">{{ acao.get_status_display }}</td>
+            <td class="p-3">{{ acao.prazo_efetivo|date:"d/m/Y" }}</td>
+            <td class="p-3">{{ acao.observacoes|default:"-" }}</td>
+            <td class="p-3">
+              {% if acao.status == "PENDENTE" %}
+                <a href="{% url 'acoes:concluir' acao.pk %}" class="text-sm underline">Concluir</a>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

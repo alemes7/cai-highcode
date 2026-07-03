@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Ação - CAI{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">
+  CAI - {{ acao.comunicado.cai_fiscal }}&nbsp;&nbsp;Tarefa - ID: {{ acao.tarefa_id }}&nbsp;&nbsp;Ação - ID: {{ acao.pk }}
+</h1>
+
+<div class="bg-white border rounded-lg p-6 space-y-4 mb-6 max-w-3xl">
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Número do CAI</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.comunicado.cai_fiscal }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Solicitante</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.comunicado.solicitante }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Departamento</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.comunicado.departamento_solicitante }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Data de criação</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.comunicado.data_criacao|date:"D, j \d\e F \d\e Y" }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Cliente</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.comunicado.cliente }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Número</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.comunicado.numero_projeto }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Data</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.comunicado.data_cai|date:"D, j \d\e F \d\e Y"|default:"-" }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Revisão</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.comunicado.revisao|default:"-" }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Introdução ou Alteração?</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.comunicado.get_tipo_display }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Responsável</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.responsavel|default:"-" }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Departamento Executante</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.departamento }}</p>
+    </div>
+  </div>
+
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">Ação requerida</label>
+    <p class="border rounded px-3 py-2 bg-slate-100 min-h-[3rem]">{{ acao.descricao }}</p>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="bg-white border rounded-lg p-6 max-w-3xl space-y-4">
+  {% csrf_token %}
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Data de Inclusão</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.data_inclusao|date:"D, j \d\e F \d\e Y" }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Prazo</label>
+      <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.prazo_original|date:"D, j \d\e F \d\e Y" }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">{{ form.prazo_reajustado.label }}</label>
+      {{ form.prazo_reajustado }}
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">* Status</label>
+      {{ form.status }}
+    </div>
+  </div>
+
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">{{ form.observacoes.label }}</label>
+    {{ form.observacoes }}
+  </div>
+
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">Anexos</label>
+    <div class="border rounded p-3 bg-slate-100 mb-2">
+      {% for anexo in acao.anexos.all %}
+        <p><a class="underline" href="{{ anexo.arquivo.url }}">{{ anexo.nome_original }}</a></p>
+      {% empty %}
+        <p class="text-sm text-slate-500">Nenhum arquivo anexado.</p>
+      {% endfor %}
+    </div>
+    {{ form.anexos }}
+  </div>
+
+  <button type="submit" class="bg-slate-900 text-white rounded px-4 py-2">Enviar</button>
+</form>
+{% endblock %}

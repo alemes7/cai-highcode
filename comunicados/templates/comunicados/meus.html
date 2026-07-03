@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Meus Comunicados - CAI{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">Meus Comunicados</h1>
+
+<div class="bg-white border rounded-lg divide-y">
+  {% for comunicado in comunicados %}
+    <a href="{% url 'comunicados:detalhe' comunicado.pk %}" class="block p-4 hover:bg-slate-50">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="font-medium">{{ comunicado.cai_fiscal }} — {{ comunicado.cliente }}</p>
+          <p class="text-sm text-slate-500">{{ comunicado.departamento_solicitante }} — {{ comunicado.data_criacao }}</p>
+        </div>
+        <span class="text-xs font-medium px-2 py-1 rounded bg-slate-200">{{ comunicado.get_status_display }}</span>
+      </div>
+    </a>
+  {% empty %}
+    <p class="p-4 text-slate-500 text-sm">Você ainda não criou nenhum Comunicado.</p>
+  {% endfor %}
+</div>
+{% endblock %}

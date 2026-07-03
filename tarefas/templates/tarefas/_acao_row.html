@@ -1,0 +1,25 @@
+<div class="acao-row relative grid grid-cols-1 md:grid-cols-2 gap-3 border rounded p-4 mb-3">
+  <button type="button"
+          onclick="this.closest('.acao-row').remove()"
+          class="absolute top-2 right-2 text-red-600 text-xs underline"
+          title="Remover">
+    Remover
+  </button>
+
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">{{ acao_form.descricao.label }}</label>
+    {{ acao_form.descricao }}
+  </div>
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">Departamento</label>
+    <p class="border rounded px-3 py-2 bg-slate-100">{{ departamento }}</p>
+  </div>
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">{{ acao_form.responsavel.label }}</label>
+    {{ acao_form.responsavel }}
+  </div>
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">{{ acao_form.prazo_original.label }}</label>
+    {{ acao_form.prazo_original }}
+  </div>
+</div>
