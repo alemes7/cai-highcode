@@ -3,24 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}CAI{% endblock %}</title>
+<title>{% block title %}ECN{% endblock %}</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen">
-<header class="bg-slate-900 text-white">
-  <nav class="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
-    <a href="{% url 'core:inicio' %}" class="font-semibold text-lg">CAI</a>
+<header class="bg-sky-600 text-white">
+  <nav class="max-w-6xl mx-auto flex items-center justify-between px-4 py-2 text-sm">
     {% if user.is_authenticated %}
-    <div class="flex items-center gap-4 text-sm">
+    <div class="flex items-center gap-4 ml-auto">
       <span>{{ user.get_username }}</span>
       <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="underline">Sair</button></form>
     </div>
     {% endif %}
   </nav>
 </header>
-<main class="max-w-5xl mx-auto px-4 py-8">
+<main class="max-w-6xl mx-auto px-4 py-8">
   {% if messages %}
     <div class="mb-6 space-y-2">
       {% for message in messages %}

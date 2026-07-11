@@ -9,7 +9,11 @@ from .models import Comunicado, TipoComunicado
 
 User = get_user_model()
 
-INPUT_CLASSES = "w-full border rounded px-3 py-2"
+INPUT_CLASSES = (
+    "w-full border border-slate-300 rounded px-3 py-2 bg-slate-50 "
+    "focus:bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
+)
+DISABLED_CLASSES = "w-full border border-slate-300 rounded px-3 py-2 bg-slate-100 text-slate-600"
 
 
 class MultiFileInput(forms.ClearableFileInput):
@@ -48,7 +52,7 @@ class ComunicadoForm(forms.Form):
     )
     solicitante = forms.ModelChoiceField(
         queryset=User.objects.all(),
-        label="Solicitante da abertura de CAI",
+        label="Solicitante da abertura do Comunicado",
         widget=forms.Select(attrs={"class": INPUT_CLASSES}),
     )
     cliente = forms.CharField(
@@ -71,30 +75,37 @@ class ComunicadoForm(forms.Form):
 
     possui_cai_cancelado = forms.BooleanField(
         required=False,
-        label="Este CAI cancela/substitui algum outro?",
+        label="Este Comunicado cancela/substitui algum outro?",
         widget=forms.CheckboxInput(
             attrs={
+                "class": "sr-only peer",
                 "onchange": (
                     "document.getElementById('cai-cancelado-wrapper')"
                     ".classList.toggle('hidden', !this.checked)"
-                )
+                ),
             }
         ),
     )
     cai_cancelado_fiscal = forms.CharField(
         required=False,
-        label="ID CAI",
+        label="Nº do Comunicado",
         widget=forms.TextInput(attrs={"class": INPUT_CLASSES, "placeholder": "ex: 51 / 25'26"}),
     )
 
-    anexos = MultiFileField(required=False, label="Anexos")
+    anexos = MultiFileField(
+        required=False,
+        label="Anexos",
+        widget=MultiFileInput(attrs={"class": "hidden", "onchange": "atualizarAnexos(this)"}),
+    )
 
     def clean(self):
         cleaned_data = super().clean()
         if cleaned_data.get("possui_cai_cancelado"):
             codigo = (cleaned_data.get("cai_cancelado_fiscal") or "").strip()
             if not codigo:
-                self.add_error("cai_cancelado_fiscal", "Informe o número do CAI a cancelar.")
+                self.add_error(
+                    "cai_cancelado_fiscal", "Informe o número do Comunicado a cancelar."
+                )
             else:
                 try:
                     cleaned_data["cancela_comunicado"] = Comunicado.objects.get(
@@ -102,7 +113,7 @@ class ComunicadoForm(forms.Form):
                     )
                 except Comunicado.DoesNotExist:
                     self.add_error(
-                        "cai_cancelado_fiscal", "Nenhum CAI encontrado com esse número."
+                        "cai_cancelado_fiscal", "Nenhum Comunicado encontrado com esse número."
                     )
         else:
             cleaned_data["cancela_comunicado"] = None

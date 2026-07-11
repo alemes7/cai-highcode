@@ -62,7 +62,7 @@ class Comunicado(TimeStampedModel):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="cancelado_por",
-        help_text="Outro Comunicado que este CAI cancela, se houver.",
+        help_text="Outro Comunicado que este substitui, se houver.",
     )
 
     comentarios = models.TextField(blank=True)
@@ -114,8 +114,8 @@ class ContadorCaiFiscal(models.Model):
     ultimo_numero = models.PositiveIntegerField(default=0)
 
     class Meta:
-        verbose_name = "Contador de CAI Fiscal"
-        verbose_name_plural = "Contadores de CAI Fiscal"
+        verbose_name = "Contador de Numeração Fiscal"
+        verbose_name_plural = "Contadores de Numeração Fiscal"
 
     def __str__(self):
         return f"{self.ano_fiscal} (último: {self.ultimo_numero})"

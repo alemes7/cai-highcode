@@ -50,3 +50,13 @@ def responder_tarefa(tarefa, novo_status, *, acoes_data=None, novas_tarefas_data
         tarefa.save()
 
     return tarefa
+
+
+def cancelar_tarefa(tarefa):
+    """Cancelamento manual de uma Tarefa isolada (ex: departamento envolvido por
+    engano) — ao contrário de responder_tarefa, não dispara escalonamento nem
+    Ações. O recálculo do status do Comunicado roda normalmente via signal
+    (tarefas/signals.py), e calcular_status já ignora Tarefas Canceladas."""
+    tarefa.status = StatusTarefa.CANCELADO
+    tarefa.save()
+    return tarefa

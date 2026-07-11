@@ -1,0 +1,41 @@
+<div id="cancelar-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-sm overflow-hidden">
+    <div class="bg-sky-500 text-white px-5 py-3 flex items-center justify-between">
+      <h2 class="font-semibold">Cancelar Comunicado</h2>
+      <button type="button" onclick="fecharCancelarModal()"
+              class="w-6 h-6 rounded-full border border-white/60 flex items-center justify-center hover:bg-white/10">
+        &times;
+      </button>
+    </div>
+    <div class="p-5">
+      <p class="text-sm text-slate-700 mb-5">
+        Tem certeza que deseja cancelar o Comunicado <strong id="cancelar-cai-fiscal"></strong>?
+        Essa ação não pode ser desfeita.
+      </p>
+      <form id="cancelar-form" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="next" id="cancelar-next">
+        <div class="flex items-center justify-end gap-3">
+          <button type="button" onclick="fecharCancelarModal()" class="text-sm text-slate-600 hover:underline">
+            Não
+          </button>
+          <button type="submit" class="bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded px-4 py-2">
+            Sim, cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function abrirCancelarModal(url, caiFiscal) {
+  document.getElementById('cancelar-form').action = url;
+  document.getElementById('cancelar-cai-fiscal').textContent = caiFiscal;
+  document.getElementById('cancelar-next').value = window.location.pathname + window.location.search;
+  document.getElementById('cancelar-modal').classList.remove('hidden');
+}
+function fecharCancelarModal() {
+  document.getElementById('cancelar-modal').classList.add('hidden');
+}
+</script>

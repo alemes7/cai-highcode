@@ -34,7 +34,7 @@ def notificar_nova_tarefa(tarefa_id):
     comunicado = tarefa.comunicado
     enviar_email(
         assunto=(
-            f"[CAI] Nova tarefa - {comunicado.cai_fiscal} - "
+            f"[ECN] Nova tarefa - {comunicado.cai_fiscal} - "
             f"{tarefa.departamento}"
         ),
         corpo=(
@@ -61,7 +61,7 @@ def notificar_tarefa_rejeitada(tarefa_id):
         return
 
     enviar_email(
-        assunto=f"[CAI] Comunicado rejeitado - {comunicado.cai_fiscal}",
+        assunto=f"[ECN] Comunicado rejeitado - {comunicado.cai_fiscal}",
         corpo=(
             f"O departamento {tarefa.departamento} rejeitou o Comunicado "
             f"{comunicado.cai_fiscal}.\n\n"

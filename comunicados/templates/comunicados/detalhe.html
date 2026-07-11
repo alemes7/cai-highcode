@@ -1,86 +1,113 @@
 {% extends "base.html" %}
-{% block title %}{{ comunicado.cai_fiscal }} - CAI{% endblock %}
+{% block title %}{{ comunicado.cai_fiscal }} - ECN{% endblock %}
 {% block content %}
-<div class="flex items-start justify-between mb-6">
-  <h1 class="text-2xl font-semibold">CAI - {{ comunicado.cai_fiscal }} - Comunicado de Alteração / Introdução de Norma</h1>
-  {% if comunicado.status == "PENDENTE" %}
-    <form method="post" action="{% url 'comunicados:cancelar' comunicado.pk %}"
-          onsubmit="return confirm('Tem certeza que deseja cancelar o CAI {{ comunicado.cai_fiscal }}?')">
-      {% csrf_token %}
-      <button type="submit" class="text-sm text-red-600 underline whitespace-nowrap ml-4">Cancelar este CAI</button>
-    </form>
-  {% endif %}
+
+<div class="bg-sky-500 text-white rounded-lg mb-2 px-4 py-3 flex items-center justify-between gap-3">
+  <div class="flex items-center gap-3">
+    <a href="{% url 'core:inicio' %}" title="Início" class="hover:opacity-80">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
+      </svg>
+    </a>
+    <a href="#" onclick="history.back(); return false;" title="Voltar" class="hover:opacity-80">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+    </a>
+  </div>
+  <h1 class="text-base md:text-lg font-semibold text-center flex-1">
+    ECN - {{ comunicado.cai_fiscal }} - Comunicado de Alteração / Introdução de Norma
+  </h1>
+  <div class="w-6"></div>
 </div>
+
+{% if comunicado.status == "PENDENTE" %}
+  <div class="text-right mb-4">
+    <button type="button"
+            onclick="abrirCancelarModal('{% url 'comunicados:cancelar' comunicado.pk %}', '{{ comunicado.cai_fiscal|escapejs }}')"
+            class="text-sm text-red-600 underline whitespace-nowrap">
+      Cancelar este Comunicado
+    </button>
+  </div>
+  {% include "comunicados/_modal_cancelar.html" %}
+{% endif %}
 
 <div class="bg-white border rounded-lg p-6 space-y-4 mb-6">
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div>
       <label class="block text-xs text-slate-500 mb-1">Solicitante</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.solicitante }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.criado_por|default:"-" }}</p>
     </div>
     <div>
       <label class="block text-xs text-slate-500 mb-1">Departamento</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.departamento_solicitante }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.departamento_solicitante }}</p>
     </div>
     <div>
       <label class="block text-xs text-slate-500 mb-1">Data</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.data_criacao|date:"D, j \d\e F \d\e Y" }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.data_criacao|date:"D, j \d\e F \d\e Y" }}</p>
     </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div>
       <label class="block text-xs text-slate-500 mb-1">Cliente</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.cliente }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.cliente }}</p>
     </div>
     <div>
       <label class="block text-xs text-slate-500 mb-1">Número</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.numero_projeto }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.numero_projeto }}</p>
     </div>
     <div>
       <label class="block text-xs text-slate-500 mb-1">Data</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.data_cai|date:"D, j \d\e F \d\e Y"|default:"-" }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.data_cai|date:"D, j \d\e F \d\e Y"|default:"-" }}</p>
     </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div>
       <label class="block text-xs text-slate-500 mb-1">Revisão</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.revisao|default:"-" }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.revisao|default:"-" }}</p>
     </div>
     <div>
       <label class="block text-xs text-slate-500 mb-1">Introdução ou Alteração?</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.get_tipo_display }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.get_tipo_display }}</p>
     </div>
     <div>
       <label class="block text-xs text-slate-500 mb-1">Status</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.get_status_display }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.get_status_display }}</p>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div>
-      <label class="block text-xs text-slate-500 mb-1">Este CAI cancela/substitui algum outro?</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.cancela_comunicado|yesno:"Sim,Não" }}</p>
+      <label class="block text-xs text-slate-500 mb-1">Solicitante da abertura do Comunicado</label>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.solicitante|default:"-" }}</p>
     </div>
-    {% if comunicado.cancela_comunicado %}
-      <div>
-        <label class="block text-xs text-slate-500 mb-1">ID CAI</label>
-        <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.cancela_comunicado.cai_fiscal }}</p>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Este Comunicado cancela/substitui algum outro?</label>
+      <div class="border border-slate-300 rounded px-3 py-2 bg-slate-100 flex items-center">
+        <span class="relative inline-flex items-center">
+          <span class="w-11 h-6 rounded-full {% if comunicado.cancela_comunicado %}bg-sky-500{% else %}bg-slate-300{% endif %} transition-colors"></span>
+          <span class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform {% if comunicado.cancela_comunicado %}translate-x-5{% endif %}"></span>
+        </span>
       </div>
-    {% endif %}
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Nº do Comunicado</label>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.cancela_comunicado.cai_fiscal|default:"-" }}</p>
+    </div>
   </div>
 
   <div>
     <label class="block text-xs text-slate-500 mb-1">Comentários</label>
-    <p class="border rounded px-3 py-2 bg-slate-100 min-h-[3rem]">{{ comunicado.comentarios|default:"-" }}</p>
+    <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100 min-h-[3rem]">{{ comunicado.comentarios|default:"-" }}</p>
   </div>
 
   <div>
     <label class="block text-xs text-slate-500 mb-1">Anexos</label>
-    <div class="border rounded p-3 bg-slate-100">
+    <div class="border border-slate-300 rounded p-3 bg-slate-100">
       {% for anexo in comunicado.anexos.all %}
-        <p><a class="underline" href="{{ anexo.arquivo.url }}">{{ anexo.nome_original }}</a></p>
+        <p>📎 <a class="underline text-sky-700" href="{{ anexo.arquivo.url }}">{{ anexo.nome_original }}</a></p>
       {% empty %}
         <p class="text-sm text-slate-500">Nenhum arquivo anexado.</p>
       {% endfor %}
@@ -88,7 +115,7 @@
   </div>
 </div>
 
-<h2 class="text-center text-blue-700 font-medium mb-2">Tarefas:</h2>
+<h2 class="text-center text-sky-600 font-medium mb-2">Tarefas:</h2>
 <div class="bg-white border rounded-lg overflow-x-auto mb-6">
   <table class="w-full text-sm">
     <thead>
@@ -106,16 +133,16 @@
       {% for tarefa in tarefas %}
         <tr class="border-b hover:bg-slate-50">
           <td class="p-3">
-            <a href="{% url 'tarefas:responder' tarefa.pk %}" class="underline text-blue-700">{{ tarefa.departamento }}</a>
+            <a href="{% url 'tarefas:responder' tarefa.pk %}" class="text-sky-600 hover:underline">{{ tarefa.departamento }}</a>
           </td>
           <td class="p-3">{{ tarefa.responsavel|default:"-" }}</td>
           <td class="p-3">{{ tarefa.get_status_display }}</td>
           <td class="p-3">{{ tarefa.data_conclusao|date:"d/m/Y"|default:"-" }}</td>
-          <td class="p-3">{{ tarefa.justificativa|default:"-" }}</td>
-          <td class="p-3">{{ tarefa.observacoes|default:"-" }}</td>
+          <td class="p-3 max-w-xs truncate" title="{{ tarefa.justificativa }}">{{ tarefa.justificativa|default:"-" }}</td>
+          <td class="p-3 max-w-xs truncate" title="{{ tarefa.observacoes }}">{{ tarefa.observacoes|default:"-" }}</td>
           <td class="p-3">
             {% if tarefa.status == "PENDENTE" %}
-              <a href="{% url 'tarefas:responder' tarefa.pk %}" class="text-sm underline">Responder</a>
+              <a href="{% url 'tarefas:responder' tarefa.pk %}" class="text-sm text-sky-600 hover:underline">Responder</a>
             {% endif %}
           </td>
         </tr>
@@ -127,7 +154,7 @@
 </div>
 
 {% if acoes %}
-  <h2 class="text-center text-blue-700 font-medium mb-2">Ações:</h2>
+  <h2 class="text-center text-sky-600 font-medium mb-2">Ações:</h2>
   <div class="bg-white border rounded-lg overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
@@ -147,10 +174,10 @@
             <td class="p-3">{{ acao.responsavel|default:"-" }}</td>
             <td class="p-3">{{ acao.get_status_display }}</td>
             <td class="p-3">{{ acao.prazo_efetivo|date:"d/m/Y" }}</td>
-            <td class="p-3">{{ acao.observacoes|default:"-" }}</td>
+            <td class="p-3 max-w-xs truncate" title="{{ acao.observacoes }}">{{ acao.observacoes|default:"-" }}</td>
             <td class="p-3">
               {% if acao.status == "PENDENTE" %}
-                <a href="{% url 'acoes:concluir' acao.pk %}" class="text-sm underline">Concluir</a>
+                <a href="{% url 'acoes:concluir' acao.pk %}" class="text-sm text-sky-600 hover:underline">Concluir</a>
               {% endif %}
             </td>
           </tr>

@@ -1,0 +1,196 @@
+<div class="bg-sky-500 text-white rounded-lg mb-6 px-4 py-3 flex items-center justify-between gap-3">
+  <a href="{% url 'core:inicio' %}" title="Início" class="hover:opacity-80">
+    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
+    </svg>
+  </a>
+  <h1 class="text-base md:text-lg font-semibold text-center flex-1">{{ titulo }}</h1>
+  <div class="flex items-center gap-4 text-sm">
+    <button type="button" onclick="document.getElementById('filtros-modal').classList.remove('hidden')" class="hover:opacity-80">
+      Filtrar &#9662;
+    </button>
+    <a href="{{ request.get_full_path }}" class="hover:opacity-80">Atualizar &#8635;</a>
+  </div>
+</div>
+
+<div class="bg-white border rounded-lg overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left border-b bg-slate-50">
+        <th class="p-3"><a href="{{ sort_links.cai.url }}" class="hover:underline">Número CAI {{ sort_links.cai.seta }}</a></th>
+        <th class="p-3"><a href="{{ sort_links.departamento.url }}" class="hover:underline">Departamento {{ sort_links.departamento.seta }}</a></th>
+        <th class="p-3"><a href="{{ sort_links.cliente.url }}" class="hover:underline">Cliente {{ sort_links.cliente.seta }}</a></th>
+        <th class="p-3"><a href="{{ sort_links.projeto.url }}" class="hover:underline">Número {{ sort_links.projeto.seta }}</a></th>
+        <th class="p-3"><a href="{{ sort_links.responsavel.url }}" class="hover:underline">Responsável Principal {{ sort_links.responsavel.seta }}</a></th>
+        <th class="p-3"><a href="{{ sort_links.status.url }}" class="hover:underline">Status {{ sort_links.status.seta }}</a></th>
+        <th class="p-3"><a href="{{ sort_links.criado.url }}" class="hover:underline">Criado {{ sort_links.criado.seta }}</a></th>
+        <th class="p-3"><a href="{{ sort_links.conclusao.url }}" class="hover:underline">Data Conclusão {{ sort_links.conclusao.seta }}</a></th>
+        <th class="p-3"><a href="{{ sort_links.solicitante.url }}" class="hover:underline">Solicitante {{ sort_links.solicitante.seta }}</a></th>
+        <th class="p-3">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tarefa in page_obj %}
+        <tr class="border-b hover:bg-slate-50">
+          <td class="p-3">
+            <a href="{% url 'comunicados:detalhe' tarefa.comunicado_id %}" class="text-sky-600 font-medium hover:underline">{{ tarefa.comunicado.cai_fiscal }}</a>
+          </td>
+          <td class="p-3">{{ tarefa.departamento }}</td>
+          <td class="p-3">{{ tarefa.comunicado.cliente }}</td>
+          <td class="p-3">{{ tarefa.comunicado.numero_projeto }}</td>
+          <td class="p-3">{{ tarefa.responsavel|default:"-" }}</td>
+          <td class="p-3">{{ tarefa.get_status_display }}</td>
+          <td class="p-3">{{ tarefa.criado_em|date:"d/m/Y" }}</td>
+          <td class="p-3">{{ tarefa.data_conclusao|date:"d/m/Y"|default:"-" }}</td>
+          <td class="p-3">{{ tarefa.comunicado.solicitante|default:"-" }}</td>
+          <td class="p-3">
+            <div class="flex items-center gap-2">
+              {% if tarefa.pk in pode_responder_ids %}
+                <a href="{% url 'tarefas:responder' tarefa.pk %}" title="Responder" class="text-sky-600 hover:text-sky-800">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                  </svg>
+                </a>
+              {% endif %}
+              {% if tarefa.status == "PENDENTE" %}
+                <button type="button" title="Cancelar"
+                        onclick="abrirCancelarModal('{% url 'tarefas:cancelar' tarefa.pk %}', '{{ tarefa.departamento|escapejs }}')"
+                        class="w-6 h-6 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-xs hover:bg-red-600">
+                  &times;
+                </button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="10" class="p-4 text-center text-slate-500">Nenhuma Tarefa encontrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page_obj.has_other_pages %}
+  <div class="flex items-center justify-center gap-6 mt-4 text-sm">
+    {% if page_obj.has_previous %}
+      <a class="text-sky-600 hover:underline" href="?{{ qs_paginacao }}page={{ page_obj.previous_page_number }}">&#8249;</a>
+    {% else %}
+      <span class="text-slate-300">&#8249;</span>
+    {% endif %}
+    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a class="text-sky-600 hover:underline" href="?{{ qs_paginacao }}page={{ page_obj.next_page_number }}">&#8250;</a>
+    {% else %}
+      <span class="text-slate-300">&#8250;</span>
+    {% endif %}
+  </div>
+{% endif %}
+
+<div id="filtros-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl overflow-hidden">
+    <div class="bg-sky-500 text-white px-5 py-3 flex items-center justify-between">
+      <h2 class="font-semibold">Filtros</h2>
+      <button type="button" onclick="document.getElementById('filtros-modal').classList.add('hidden')"
+              class="w-6 h-6 rounded-full border border-white/60 flex items-center justify-center hover:bg-white/10">
+        &times;
+      </button>
+    </div>
+    <form method="get" class="p-5 space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Número CAI</label>
+        <div class="flex items-center gap-2">
+          <input type="text" id="f-cai" name="cai" value="{{ filtros.cai }}"
+                 class="flex-1 border border-slate-300 rounded px-3 py-2 bg-slate-50">
+          <button type="button" onclick="document.getElementById('f-cai').value=''" title="Limpar" class="text-red-500">&#128465;</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Departamento</label>
+          <div class="flex items-center gap-2">
+            <select id="f-departamento" name="departamento" class="flex-1 border border-slate-300 rounded px-3 py-2 bg-slate-50">
+              <option value="">- Selecione -</option>
+              {% for d in departamentos %}
+                <option value="{{ d.pk }}" {% if filtros.departamento == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.nome }}</option>
+              {% endfor %}
+            </select>
+            <button type="button" onclick="document.getElementById('f-departamento').value=''" title="Limpar" class="text-red-500">&#128465;</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Cliente</label>
+          <div class="flex items-center gap-2">
+            <select id="f-cliente" name="cliente" class="flex-1 border border-slate-300 rounded px-3 py-2 bg-slate-50">
+              <option value="">- Selecione -</option>
+              {% for c in clientes %}
+                <option value="{{ c }}" {% if filtros.cliente == c %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+            <button type="button" onclick="document.getElementById('f-cliente').value=''" title="Limpar" class="text-red-500">&#128465;</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Número</label>
+          <div class="flex items-center gap-2">
+            <input type="text" id="f-projeto" name="projeto" value="{{ filtros.projeto }}"
+                   class="flex-1 border border-slate-300 rounded px-3 py-2 bg-slate-50">
+            <button type="button" onclick="document.getElementById('f-projeto').value=''" title="Limpar" class="text-red-500">&#128465;</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Responsável Principal</label>
+          <div class="flex items-center gap-2">
+            <select id="f-responsavel" name="responsavel" class="flex-1 border border-slate-300 rounded px-3 py-2 bg-slate-50">
+              <option value="">- Selecione -</option>
+              {% for u in responsaveis %}
+                <option value="{{ u.pk }}" {% if filtros.responsavel == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+              {% endfor %}
+            </select>
+            <button type="button" onclick="document.getElementById('f-responsavel').value=''" title="Limpar" class="text-red-500">&#128465;</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Solicitante</label>
+          <div class="flex items-center gap-2">
+            <select id="f-solicitante" name="solicitante" class="flex-1 border border-slate-300 rounded px-3 py-2 bg-slate-50">
+              <option value="">- Selecione -</option>
+              {% for u in solicitantes %}
+                <option value="{{ u.pk }}" {% if filtros.solicitante == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+              {% endfor %}
+            </select>
+            <button type="button" onclick="document.getElementById('f-solicitante').value=''" title="Limpar" class="text-red-500">&#128465;</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Status</label>
+          <div class="flex items-center gap-2">
+            <select id="f-status" name="status" class="flex-1 border border-slate-300 rounded px-3 py-2 bg-slate-50">
+              <option value="">- Selecione -</option>
+              {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if filtros.status == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <button type="button" onclick="document.getElementById('f-status').value=''" title="Limpar" class="text-red-500">&#128465;</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2">
+        <a href="{{ url_limpar_filtros }}" class="bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded px-4 py-2">
+          Limpar Filtros
+        </a>
+        <button type="submit" class="bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded px-4 py-2">
+          Aplicar Filtros
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% include "tarefas/_modal_cancelar.html" %}

@@ -17,7 +17,7 @@ def notificar_nova_acao(acao_id):
         return
 
     enviar_email(
-        assunto=f"[CAI] Nova ação - {acao.comunicado.cai_fiscal}",
+        assunto=f"[ECN] Nova ação - {acao.comunicado.cai_fiscal}",
         corpo=(
             f"Uma nova ação foi atribuída a você no Comunicado "
             f"{acao.comunicado.cai_fiscal}.\n\n"
@@ -53,7 +53,7 @@ def _notificar_prazo(acao, prazo):
     situacao = "atrasada" if prazo < hoje else f"vence em {(prazo - hoje).days} dia(s)"
 
     enviar_email(
-        assunto=f"[CAI] Ação {situacao} - {acao.comunicado.cai_fiscal}",
+        assunto=f"[ECN] Ação {situacao} - {acao.comunicado.cai_fiscal}",
         corpo=(
             f"A ação abaixo está {situacao}:\n\n"
             f"Comunicado: {acao.comunicado.cai_fiscal}\n"

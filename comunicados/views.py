@@ -1,13 +1,31 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from core.models import Departamento
 
 from .forms import ComunicadoForm, TarefaInicialForm, TarefaInicialFormSet
-from .models import Comunicado, StatusComunicado
+from .models import Comunicado, StatusComunicado, TipoComunicado
 from .services import cancelar_comunicado, criar_comunicado
+
+User = get_user_model()
+
+# Chave do filtro/ordenação (GET) -> nome do campo no model, para a tela de Comunicados abertos.
+SORT_CAMPOS = {
+    "cai": "numero_sequencial",
+    "data": "data_criacao",
+    "cliente": "cliente",
+    "projeto": "numero_projeto",
+    "tipo": "tipo",
+    "solicitante": "solicitante__first_name",
+    "status": "status",
+}
 
 
 @login_required
@@ -117,42 +135,96 @@ def detalhe_comunicado(request, pk):
     )
 
 
-@login_required
-def meus_comunicados(request):
-    comunicados = (
-        Comunicado.objects.filter(criado_por=request.user)
-        .select_related("departamento_solicitante")
-        .order_by("-data_criacao")
-    )
-    return render(request, "comunicados/meus.html", {"comunicados": comunicados})
+def _contexto_lista_comunicados(request, comunicados):
+    """Monta filtros/ordenação/paginação compartilhados entre Comunicados Abertos
+    e Meus Comunicados — as duas telas usam exatamente a mesma UI (ver
+    comunicados/_lista_comunicados_corpo.html), só muda o queryset base."""
+    comunicados = comunicados.select_related("departamento_solicitante", "solicitante")
 
+    filtros = {
+        "cai": request.GET.get("cai", "").strip(),
+        "data": request.GET.get("data", "").strip(),
+        "cliente": request.GET.get("cliente", "").strip(),
+        "projeto": request.GET.get("projeto", "").strip(),
+        "tipo": request.GET.get("tipo", "").strip(),
+        "solicitante": request.GET.get("solicitante", "").strip(),
+        "status": request.GET.get("status", "").strip(),
+    }
+    if filtros["cai"]:
+        comunicados = comunicados.filter(cai_fiscal__icontains=filtros["cai"])
+    if filtros["data"]:
+        comunicados = comunicados.filter(data_criacao=filtros["data"])
+    if filtros["cliente"]:
+        comunicados = comunicados.filter(cliente=filtros["cliente"])
+    if filtros["projeto"]:
+        comunicados = comunicados.filter(numero_projeto__icontains=filtros["projeto"])
+    if filtros["tipo"]:
+        comunicados = comunicados.filter(tipo=filtros["tipo"])
+    if filtros["solicitante"]:
+        comunicados = comunicados.filter(solicitante_id=filtros["solicitante"])
+    if filtros["status"]:
+        comunicados = comunicados.filter(status=filtros["status"])
 
-@login_required
-def listar_abertos(request):
-    comunicados = Comunicado.objects.select_related(
-        "departamento_solicitante", "solicitante"
-    ).order_by("-numero_sequencial")
-
-    status = request.GET.get("status", "")
-    cliente = request.GET.get("cliente", "")
-    if status:
-        comunicados = comunicados.filter(status=status)
-    if cliente:
-        comunicados = comunicados.filter(cliente__icontains=cliente)
+    sort = request.GET.get("sort", "-cai")
+    sort_campo = sort.lstrip("-")
+    campo_model = SORT_CAMPOS.get(sort_campo, "numero_sequencial")
+    if sort.startswith("-"):
+        comunicados = comunicados.order_by(f"-{campo_model}", "-id")
+    else:
+        comunicados = comunicados.order_by(campo_model, "id")
 
     paginator = Paginator(comunicados, 25)
     page_obj = paginator.get_page(request.GET.get("page"))
 
-    return render(
-        request,
-        "comunicados/lista_abertos.html",
-        {
-            "page_obj": page_obj,
-            "status_choices": StatusComunicado.choices,
-            "status_selecionado": status,
-            "cliente_buscado": cliente,
-        },
+    # Querystring sem 'page' (pra paginação) e sem 'sort' (pra cabeçalhos ordenáveis),
+    # sempre preservando os filtros ativos.
+    params_sem_page = {k: v for k, v in filtros.items() if v}
+    if sort:
+        params_sem_page["sort"] = sort
+    qs_sem_page = urlencode(params_sem_page)
+
+    params_sem_sort = {k: v for k, v in filtros.items() if v}
+    qs_sem_sort = urlencode(params_sem_sort)
+
+    sort_links = {}
+    for chave in SORT_CAMPOS:
+        proximo = f"-{chave}" if sort == chave else chave
+        seta = "▲" if sort == chave else ("▼" if sort == f"-{chave}" else "")
+        prefixo = f"{qs_sem_sort}&" if qs_sem_sort else ""
+        sort_links[chave] = {"url": f"?{prefixo}sort={proximo}", "seta": seta}
+
+    return {
+        "page_obj": page_obj,
+        "status_choices": StatusComunicado.choices,
+        "tipo_choices": TipoComunicado.choices,
+        "clientes": Comunicado.objects.order_by("cliente").values_list(
+            "cliente", flat=True
+        ).distinct(),
+        "solicitantes": User.objects.filter(
+            comunicados_solicitados__isnull=False
+        ).distinct().order_by("first_name", "username"),
+        "filtros": filtros,
+        "sort_links": sort_links,
+        "qs_paginacao": f"{qs_sem_page}&" if qs_sem_page else "",
+    }
+
+
+@login_required
+def listar_abertos(request):
+    contexto = _contexto_lista_comunicados(request, Comunicado.objects.all())
+    contexto["titulo"] = "Comunicados"
+    contexto["url_limpar_filtros"] = reverse("comunicados:listar_abertos")
+    return render(request, "comunicados/lista_abertos.html", contexto)
+
+
+@login_required
+def meus_comunicados(request):
+    contexto = _contexto_lista_comunicados(
+        request, Comunicado.objects.filter(criado_por=request.user)
     )
+    contexto["titulo"] = "Meus Comunicados"
+    contexto["url_limpar_filtros"] = reverse("comunicados:meus")
+    return render(request, "comunicados/meus.html", contexto)
 
 
 @login_required
@@ -164,4 +236,8 @@ def cancelar_comunicado_view(request, pk):
             messages.success(request, f"Comunicado {comunicado.cai_fiscal} cancelado.")
         else:
             messages.error(request, "Esse Comunicado não pode mais ser cancelado.")
+
+    next_url = request.POST.get("next", "")
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        return redirect(next_url)
     return redirect("comunicados:listar_abertos")

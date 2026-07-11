@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Ação - CAI{% endblock %}
+{% block title %}Ação - ECN{% endblock %}
 {% block content %}
 <h1 class="text-2xl font-semibold mb-6">
-  CAI - {{ acao.comunicado.cai_fiscal }}&nbsp;&nbsp;Tarefa - ID: {{ acao.tarefa_id }}&nbsp;&nbsp;Ação - ID: {{ acao.pk }}
+  ECN - {{ acao.comunicado.cai_fiscal }}&nbsp;&nbsp;Tarefa - ID: {{ acao.tarefa_id }}&nbsp;&nbsp;Ação - ID: {{ acao.pk }}
 </h1>
 
 <div class="bg-white border rounded-lg p-6 space-y-4 mb-6 max-w-3xl">
   <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
     <div>
-      <label class="block text-xs text-slate-500 mb-1">Número do CAI</label>
+      <label class="block text-xs text-slate-500 mb-1">Número do Comunicado</label>
       <p class="border rounded px-3 py-2 bg-slate-100">{{ acao.comunicado.cai_fiscal }}</p>
     </div>
     <div>

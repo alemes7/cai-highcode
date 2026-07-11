@@ -31,7 +31,7 @@ def notificar_novo_comunicado(comunicado_id):
         return
 
     enviar_email(
-        assunto=f"[CAI] Novo comunicado aberto - {comunicado.cai_fiscal}",
+        assunto=f"[ECN] Novo comunicado aberto - {comunicado.cai_fiscal}",
         corpo=(
             f"Um novo Comunicado foi aberto ({comunicado.departamento_solicitante}).\n\n"
             f"Cliente: {comunicado.cliente}\n"
@@ -52,7 +52,7 @@ def notificar_comunicado_finalizado(comunicado_id):
         return
 
     enviar_email(
-        assunto=f"[CAI] Comunicado finalizado - {comunicado.cai_fiscal}",
+        assunto=f"[ECN] Comunicado finalizado - {comunicado.cai_fiscal}",
         corpo=(
             f"O Comunicado {comunicado.cai_fiscal} foi finalizado "
             f"com o status: {comunicado.get_status_display()}.\n"

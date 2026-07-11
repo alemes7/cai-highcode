@@ -2,13 +2,16 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.forms import formset_factory
 
-from comunicados.forms import MultiFileField
+from comunicados.forms import MultiFileField, MultiFileInput
 
 from .models import StatusTarefa
 
 User = get_user_model()
 
-INPUT_CLASSES = "w-full border rounded px-3 py-2"
+INPUT_CLASSES = (
+    "w-full border border-slate-300 rounded px-3 py-2 bg-slate-50 "
+    "focus:bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
+)
 
 
 class ResponderTarefaForm(forms.Form):
@@ -61,7 +64,11 @@ class ResponderTarefaForm(forms.Form):
             }
         ),
     )
-    anexos = MultiFileField(required=False, label="Anexos")
+    anexos = MultiFileField(
+        required=False,
+        label="Anexos",
+        widget=MultiFileInput(attrs={"class": "hidden", "onchange": "atualizarAnexos(this)"}),
+    )
 
 
 class AcaoFormularioForm(forms.Form):

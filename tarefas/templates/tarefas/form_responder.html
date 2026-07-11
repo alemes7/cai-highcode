@@ -1,57 +1,86 @@
 {% extends "base.html" %}
-{% block title %}Responder Tarefa - CAI{% endblock %}
+{% block title %}Responder Tarefa - ECN{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold mb-6">CAI - {{ comunicado.cai_fiscal }} | Tarefa - ID: {{ tarefa.pk }}</h1>
 
-<div class="bg-white border rounded-lg p-6 space-y-4 mb-6 max-w-3xl">
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bg-sky-500 text-white rounded-lg mb-6 px-4 py-3 flex items-center justify-between gap-3">
+  <div class="flex items-center gap-3">
+    <a href="{% url 'core:inicio' %}" title="Início" class="hover:opacity-80">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
+      </svg>
+    </a>
+    <a href="#" onclick="history.back(); return false;" title="Voltar" class="hover:opacity-80">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+    </a>
+  </div>
+  <h1 class="text-base md:text-lg font-semibold text-center flex-1">
+    ECN - {{ comunicado.cai_fiscal }} | Tarefa - ID: {{ tarefa.pk }}
+  </h1>
+  <button type="submit" form="form-responder"
+          class="bg-white text-sky-600 font-medium rounded-full px-5 py-1.5 text-sm hover:bg-sky-50 whitespace-nowrap">
+    Enviar
+  </button>
+</div>
+
+<div class="bg-white border rounded-lg p-6 space-y-4 mb-6">
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Número do CAI</label>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.cai_fiscal }}</p>
+    </div>
     <div>
       <label class="block text-xs text-slate-500 mb-1">Solicitante</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.solicitante }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.solicitante|default:"-" }}</p>
     </div>
     <div>
       <label class="block text-xs text-slate-500 mb-1">Departamento</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.departamento_solicitante }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.departamento_solicitante }}</p>
     </div>
     <div>
       <label class="block text-xs text-slate-500 mb-1">Data</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.data_criacao|date:"D, j \d\e F \d\e Y" }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.data_criacao|date:"D, j \d\e F \d\e Y" }}</p>
     </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div>
       <label class="block text-xs text-slate-500 mb-1">Cliente</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.cliente }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.cliente }}</p>
     </div>
     <div>
       <label class="block text-xs text-slate-500 mb-1">Número</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.numero_projeto }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.numero_projeto }}</p>
     </div>
     <div>
-      <label class="block text-xs text-slate-500 mb-1">Introdução ou Alteração?</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ comunicado.get_tipo_display }}</p>
+      <label class="block text-xs text-slate-500 mb-1">Revisão</label>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.revisao|default:"-" }}</p>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Introdução ou Alteração?</label>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.get_tipo_display }}</p>
+    </div>
     <div>
       <label class="block text-xs text-slate-500 mb-1">Departamento</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ tarefa.departamento }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ tarefa.departamento }}</p>
     </div>
     <div>
       <label class="block text-xs text-slate-500 mb-1">Status</label>
-      <p class="border rounded px-3 py-2 bg-slate-100">{{ tarefa.get_status_display }}</p>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ tarefa.get_status_display }}</p>
     </div>
   </div>
 
   <div>
     <label class="block text-xs text-slate-500 mb-1">Comentários</label>
-    <p class="border rounded px-3 py-2 bg-slate-100 min-h-[2.5rem]">{{ tarefa.comentarios|default:"-" }}</p>
+    <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100 min-h-[2.5rem]">{{ tarefa.comentarios|default:"-" }}</p>
   </div>
 </div>
 
-<form method="post" enctype="multipart/form-data" class="max-w-3xl space-y-6">
+<form id="form-responder" method="post" enctype="multipart/form-data" class="space-y-6">
   {% csrf_token %}
 
   {% if form.non_field_errors %}
@@ -68,24 +97,35 @@
   </div>
 
   <div id="acoes-wrapper" class="bg-white border rounded-lg p-6 {% if form.decisao.value != 'APROVADO_COM_ACOES' %}hidden{% endif %}">
-    <p class="font-medium mb-1 text-blue-700 text-center">Ações:</p>
+    <p class="font-medium mb-3 text-sky-600 text-center">Ações:</p>
     {% if acao_formset.non_form_errors %}
       <p class="text-red-600 text-sm mb-2">{{ acao_formset.non_form_errors.0 }}</p>
     {% endif %}
     {{ acao_formset.management_form }}
+
+    <div class="hidden md:grid grid-cols-[1.5fr_1fr_1fr_1fr_auto] gap-3 text-xs font-semibold text-slate-500 uppercase border-b border-slate-300 pb-2 mb-1">
+      <div>Ação Requerida</div>
+      <div>Departamento</div>
+      <div>Responsável Principal</div>
+      <div>Prazo</div>
+      <div></div>
+    </div>
+
     <div id="acoes-container">
       {% for acao_form in acao_formset %}
         {% include "tarefas/_acao_row.html" with departamento=tarefa.departamento %}
       {% endfor %}
     </div>
-    <button type="button"
-            class="text-sm underline"
-            hx-get="{% url 'tarefas:nova_linha_acao' %}"
-            hx-vals='js:{index: document.getElementById("id_acoes-TOTAL_FORMS").value, tarefa: {{ tarefa.pk }}}'
-            hx-target="#acoes-container"
-            hx-swap="beforeend">
-      + Adicionar Ação
-    </button>
+    <div class="text-right mt-3">
+      <button type="button"
+              class="text-sm text-sky-600 underline"
+              hx-get="{% url 'tarefas:nova_linha_acao' %}"
+              hx-vals='js:{index: document.getElementById("id_acoes-TOTAL_FORMS").value, tarefa: {{ tarefa.pk }}}'
+              hx-target="#acoes-container"
+              hx-swap="beforeend">
+        + Adicionar Ação
+      </button>
+    </div>
   </div>
 
   <div class="bg-white border rounded-lg p-6">
@@ -96,31 +136,65 @@
   </div>
 
   <div id="escalonamento-wrapper" class="bg-white border rounded-lg p-6 {% if form.envolver_outro_departamento.value != 'SIM' %}hidden{% endif %}">
-    <p class="font-medium mb-1 text-blue-700 text-center">Tarefas: (Envolver outros departamentos)</p>
+    <p class="text-center font-medium text-sky-600 mb-4">Tarefas: (Envolver outros departamentos)</p>
     {% if escalonamento_formset.non_form_errors %}
       <p class="text-red-600 text-sm mb-2">{{ escalonamento_formset.non_form_errors.0 }}</p>
     {% endif %}
     {{ escalonamento_formset.management_form }}
+
+    <div class="hidden md:grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3 text-xs font-semibold text-slate-500 uppercase border-b border-slate-300 pb-2 mb-1">
+      <div>Departamento</div>
+      <div>Responsável Principal</div>
+      <div>Responsáveis / cópia</div>
+      <div>Comentários</div>
+      <div></div>
+    </div>
+
     <div id="escalonamento-container">
       {% for tarefa_form in escalonamento_formset %}
-        {% include "comunicados/_tarefa_row.html" %}
+        {% include "comunicados/_tarefa_row.html" with tarefa_form=tarefa_form %}
       {% endfor %}
     </div>
-    <button type="button"
-            class="text-sm underline"
-            hx-get="{% url 'comunicados:nova_linha_tarefa' %}"
-            hx-vals='js:{index: document.getElementById("id_escalonamento-TOTAL_FORMS").value, prefix: "escalonamento"}'
-            hx-target="#escalonamento-container"
-            hx-swap="beforeend">
-      + Adicionar Tarefa/Departamento
-    </button>
+    <div class="text-right mt-3">
+      <button type="button"
+              class="text-sm text-sky-600 underline"
+              hx-get="{% url 'comunicados:nova_linha_tarefa' %}"
+              hx-vals='js:{index: document.getElementById("id_escalonamento-TOTAL_FORMS").value, prefix: "escalonamento"}'
+              hx-target="#escalonamento-container"
+              hx-swap="beforeend">
+        + Adicionar Tarefa/Departamento
+      </button>
+    </div>
   </div>
 
   <div class="bg-white border rounded-lg p-6">
-    <label class="block text-sm font-medium mb-1">{{ form.anexos.label }}</label>
-    {{ form.anexos }}
+    <label class="block text-sm font-medium mb-2">Anexos</label>
+    <div class="border border-slate-200 rounded p-4 bg-slate-50">
+      <p id="anexos-vazio" class="text-sm text-slate-500 mb-2">Nenhum arquivo anexado.</p>
+      <ul id="anexos-lista" class="text-sm text-slate-700 mb-2 list-disc list-inside"></ul>
+      <label class="inline-flex items-center gap-1 text-sm text-sky-600 cursor-pointer hover:underline">
+        📎 Adicione um anexo
+        {{ form.anexos }}
+      </label>
+    </div>
   </div>
-
-  <button type="submit" class="bg-slate-900 text-white rounded px-4 py-2">Enviar</button>
 </form>
+
+<script>
+function atualizarAnexos(input) {
+  const lista = document.getElementById('anexos-lista');
+  const vazio = document.getElementById('anexos-vazio');
+  lista.innerHTML = '';
+  if (input.files.length > 0) {
+    vazio.classList.add('hidden');
+    for (const arquivo of input.files) {
+      const li = document.createElement('li');
+      li.textContent = arquivo.name;
+      lista.appendChild(li);
+    }
+  } else {
+    vazio.classList.remove('hidden');
+  }
+}
+</script>
 {% endblock %}

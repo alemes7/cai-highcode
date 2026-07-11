@@ -1,29 +1,164 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from comunicados.forms import TarefaInicialFormSet
+from core.models import Departamento
 
 from .forms import AcaoFormSet, AcaoFormularioForm, ResponderTarefaForm
 from .models import StatusTarefa, Tarefa
-from .services import responder_tarefa
+from .services import cancelar_tarefa, responder_tarefa
+
+User = get_user_model()
+
+# Chave do filtro/ordenação (GET) -> nome do campo no model, para as telas de Tarefas.
+SORT_CAMPOS = {
+    "cai": "comunicado__numero_sequencial",
+    "departamento": "departamento__nome",
+    "cliente": "comunicado__cliente",
+    "projeto": "comunicado__numero_projeto",
+    "responsavel": "responsavel__first_name",
+    "status": "status",
+    "criado": "criado_em",
+    "conclusao": "data_conclusao",
+    "solicitante": "comunicado__solicitante__first_name",
+}
+
+
+def _tarefas_que_posso_responder(user):
+    """IDs de Tarefas Pendentes onde o usuário é responsável direto, ou onde não
+    há responsável definido e o usuário pertence ao departamento — mesma regra
+    usada em minhas_tarefas para decidir quando mostrar o lápis de responder."""
+    return set(
+        Tarefa.objects.filter(status=StatusTarefa.PENDENTE)
+        .filter(
+            Q(responsavel=user)
+            | Q(responsavel__isnull=True, departamento__responsaveis=user)
+        )
+        .values_list("pk", flat=True)
+    )
+
+
+def _contexto_lista_tarefas(request, tarefas):
+    """Filtros/ordenação/paginação compartilhados entre Tarefas Abertas e Minhas
+    Tarefas — mesma UI (ver tarefas/_lista_tarefas_corpo.html), só muda o
+    queryset base."""
+    tarefas = tarefas.select_related(
+        "comunicado", "comunicado__solicitante", "departamento", "responsavel"
+    )
+
+    filtros = {
+        "cai": request.GET.get("cai", "").strip(),
+        "departamento": request.GET.get("departamento", "").strip(),
+        "cliente": request.GET.get("cliente", "").strip(),
+        "projeto": request.GET.get("projeto", "").strip(),
+        "responsavel": request.GET.get("responsavel", "").strip(),
+        "status": request.GET.get("status", "").strip(),
+        "solicitante": request.GET.get("solicitante", "").strip(),
+    }
+    if filtros["cai"]:
+        tarefas = tarefas.filter(comunicado__cai_fiscal__icontains=filtros["cai"])
+    if filtros["departamento"]:
+        tarefas = tarefas.filter(departamento_id=filtros["departamento"])
+    if filtros["cliente"]:
+        tarefas = tarefas.filter(comunicado__cliente=filtros["cliente"])
+    if filtros["projeto"]:
+        tarefas = tarefas.filter(comunicado__numero_projeto__icontains=filtros["projeto"])
+    if filtros["responsavel"]:
+        tarefas = tarefas.filter(responsavel_id=filtros["responsavel"])
+    if filtros["status"]:
+        tarefas = tarefas.filter(status=filtros["status"])
+    if filtros["solicitante"]:
+        tarefas = tarefas.filter(comunicado__solicitante_id=filtros["solicitante"])
+
+    sort = request.GET.get("sort", "-cai")
+    sort_campo = sort.lstrip("-")
+    campo_model = SORT_CAMPOS.get(sort_campo, "comunicado__numero_sequencial")
+    if sort.startswith("-"):
+        tarefas = tarefas.order_by(f"-{campo_model}", "-id")
+    else:
+        tarefas = tarefas.order_by(campo_model, "id")
+
+    paginator = Paginator(tarefas, 25)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    params_sem_page = {k: v for k, v in filtros.items() if v}
+    if sort:
+        params_sem_page["sort"] = sort
+    qs_sem_page = urlencode(params_sem_page)
+
+    params_sem_sort = {k: v for k, v in filtros.items() if v}
+    qs_sem_sort = urlencode(params_sem_sort)
+
+    sort_links = {}
+    for chave in SORT_CAMPOS:
+        proximo = f"-{chave}" if sort == chave else chave
+        seta = "▲" if sort == chave else ("▼" if sort == f"-{chave}" else "")
+        prefixo = f"{qs_sem_sort}&" if qs_sem_sort else ""
+        sort_links[chave] = {"url": f"?{prefixo}sort={proximo}", "seta": seta}
+
+    return {
+        "page_obj": page_obj,
+        "status_choices": StatusTarefa.choices,
+        "departamentos": Departamento.objects.order_by("nome"),
+        "clientes": Tarefa.objects.order_by("comunicado__cliente").values_list(
+            "comunicado__cliente", flat=True
+        ).distinct(),
+        "responsaveis": User.objects.filter(tarefas_responsavel__isnull=False)
+        .distinct()
+        .order_by("first_name", "username"),
+        "solicitantes": User.objects.filter(comunicados_solicitados__isnull=False)
+        .distinct()
+        .order_by("first_name", "username"),
+        "filtros": filtros,
+        "sort_links": sort_links,
+        "qs_paginacao": f"{qs_sem_page}&" if qs_sem_page else "",
+        "pode_responder_ids": _tarefas_que_posso_responder(request.user),
+    }
 
 
 @login_required
-def minhas_tarefas_pendentes(request):
-    tarefas = (
-        Tarefa.objects.filter(status=StatusTarefa.PENDENTE)
-        .filter(
-            Q(responsavel=request.user)
-            | Q(responsavel__isnull=True, departamento__responsaveis=request.user)
-        )
-        .select_related("comunicado", "departamento")
-        .distinct()
-        .order_by("prazo")
-    )
-    return render(request, "tarefas/minhas_pendentes.html", {"tarefas": tarefas})
+def listar_abertas(request):
+    contexto = _contexto_lista_tarefas(request, Tarefa.objects.all())
+    contexto["titulo"] = "Tarefas"
+    contexto["url_limpar_filtros"] = reverse("tarefas:listar_abertas")
+    return render(request, "tarefas/listar_abertas.html", contexto)
+
+
+@login_required
+def minhas_tarefas(request):
+    tarefas = Tarefa.objects.filter(
+        Q(responsavel=request.user)
+        | Q(responsavel__isnull=True, departamento__responsaveis=request.user)
+    ).distinct()
+    contexto = _contexto_lista_tarefas(request, tarefas)
+    contexto["titulo"] = "Minhas Tarefas"
+    contexto["url_limpar_filtros"] = reverse("tarefas:minhas")
+    return render(request, "tarefas/minhas.html", contexto)
+
+
+@login_required
+def cancelar_tarefa_view(request, pk):
+    tarefa = get_object_or_404(Tarefa, pk=pk)
+    if request.method == "POST":
+        if tarefa.status == StatusTarefa.PENDENTE:
+            cancelar_tarefa(tarefa)
+            messages.success(request, "Tarefa cancelada.")
+        else:
+            messages.error(request, "Essa Tarefa não pode mais ser cancelada.")
+
+    next_url = request.POST.get("next", "")
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        return redirect(next_url)
+    return redirect("tarefas:listar_abertas")
 
 
 @login_required

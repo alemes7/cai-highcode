@@ -1,24 +1,18 @@
-<div class="tarefa-row relative grid grid-cols-1 md:grid-cols-2 gap-3 border rounded p-4 mb-3">
-  <button type="button"
-          onclick="this.closest('.tarefa-row').remove()"
-          class="absolute top-2 right-2 text-red-600 text-xs underline"
-          title="Remover">
-    Remover
-  </button>
-
+<div class="tarefa-row grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3 items-start border-b border-slate-200 py-3">
   <div>
-    <label class="block text-xs text-slate-500 mb-1">* Departamento</label>
     {{ tarefa_form.departamento }}
   </div>
   <div>
-    <label class="block text-xs text-slate-500 mb-1">{{ tarefa_form.responsavel_principal.label }}</label>
     {{ tarefa_form.responsavel_principal }}
   </div>
-
-  <div class="md:col-span-2 tarefa-info-display text-xs text-slate-500"></div>
-
-  <div class="md:col-span-2">
-    <label class="block text-xs text-slate-500 mb-1">{{ tarefa_form.comentarios.label }}</label>
+  <div class="tarefa-info-display text-xs text-slate-500 pt-2">—</div>
+  <div>
     {{ tarefa_form.comentarios }}
   </div>
+  <button type="button"
+          onclick="this.closest('.tarefa-row').remove()"
+          class="text-red-500 hover:text-red-700 text-lg leading-none pt-2"
+          title="Remover">
+    &times;
+  </button>
 </div>
