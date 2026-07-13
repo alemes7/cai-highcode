@@ -23,12 +23,20 @@
   <p class="text-center font-medium text-sky-600">Informações sobre a Solicitação:</p>
 
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-    <div>
+    <div class="relative" id="cai-dropdown-wrapper">
       <label class="block text-xs text-slate-500 mb-1">Número do CAI</label>
-      <button type="button" onclick="abrirBuscaComunicado()"
-              class="w-full text-left border border-slate-300 rounded px-3 py-2 bg-slate-50 hover:bg-slate-100">
-        {{ comunicado.cai_fiscal|default:"- Selecione -" }}
-      </button>
+      <input type="text" id="cai-dropdown-input"
+             value="{{ comunicado.cai_fiscal|default:'' }}"
+             placeholder="- Selecione -"
+             autocomplete="off"
+             class="w-full border border-slate-300 rounded px-3 py-2 bg-slate-50"
+             hx-get="{% url 'core:buscar_comunicados' %}"
+             hx-trigger="click, input changed delay:300ms"
+             hx-target="#cai-dropdown-resultado"
+             hx-swap="innerHTML"
+             onfocus="document.getElementById('cai-dropdown-resultado').classList.remove('hidden')">
+      <div id="cai-dropdown-resultado"
+           class="hidden absolute z-20 mt-1 w-full bg-white border border-slate-300 rounded shadow-lg max-h-72 overflow-y-auto"></div>
     </div>
     <div>
       <label class="block text-xs text-slate-500 mb-1">Cliente</label>
@@ -175,27 +183,6 @@
   </div>
 </div>
 
-<div id="busca-comunicado-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-  <div class="bg-white rounded-lg shadow-lg w-full max-w-lg overflow-hidden">
-    <div class="px-5 py-3 border-b">
-      <h2 class="text-center font-semibold text-sky-600">Selecione o Comunicado (CAI)</h2>
-    </div>
-    <div class="p-5">
-      <label class="block text-sm font-medium mb-1">Número do CAI ou Cliente</label>
-      <input type="text" id="busca-comunicado-input" placeholder="Digite para buscar..." autocomplete="off"
-             class="w-full border border-slate-300 rounded px-3 py-2 bg-slate-50 mb-3"
-             hx-get="{% url 'core:buscar_comunicados' %}"
-             hx-trigger="input changed delay:300ms"
-             hx-target="#busca-comunicado-resultado"
-             hx-swap="innerHTML">
-      <div id="busca-comunicado-resultado" class="border rounded max-h-72 overflow-y-auto"></div>
-      <div class="text-right mt-3">
-        <button type="button" onclick="fecharBuscaComunicado()" class="text-sm text-slate-600 hover:underline">Fechar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div id="busca-responsavel-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
   <div class="bg-white rounded-lg shadow-lg w-full max-w-lg overflow-hidden">
     <div class="px-5 py-3 border-b">
@@ -218,18 +205,19 @@
 </div>
 
 <script>
-function abrirBuscaComunicado() {
-  document.getElementById('busca-comunicado-input').value = '';
-  document.getElementById('busca-comunicado-resultado').innerHTML = '';
-  document.getElementById('busca-comunicado-modal').classList.remove('hidden');
-  document.getElementById('busca-comunicado-input').focus();
-}
-function fecharBuscaComunicado() {
-  document.getElementById('busca-comunicado-modal').classList.add('hidden');
-}
 function selecionarComunicado(id) {
   window.location.href = '?comunicado=' + id;
 }
+// Fecha a lista suspensa do CAI ao clicar fora dela (o dropdown some sozinho
+// ao selecionar um item porque a página recarrega, mas isso cobre o caso de
+// abrir e desistir sem escolher nada).
+document.addEventListener('click', function (event) {
+  const wrapper = document.getElementById('cai-dropdown-wrapper');
+  const resultado = document.getElementById('cai-dropdown-resultado');
+  if (wrapper && resultado && !wrapper.contains(event.target)) {
+    resultado.classList.add('hidden');
+  }
+});
 
 function abrirAlterarResponsavel(acaoId, comunicadoId, responsavelIdAtual, nomeAtual) {
   document.getElementById('alterar-acao-id').value = acaoId;

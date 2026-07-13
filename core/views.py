@@ -326,19 +326,22 @@ def buscar_usuarios(request):
 @admin_required
 def buscar_comunicados(request):
     """Endpoint HTMX do seletor "Número do CAI" do Painel Administrativo —
-    busca ao vivo em vez de carregar todos os Comunicados num <select> só
-    (com dezenas de milhares de registros isso vira uma página de vários
-    MB e trava o carregamento)."""
+    se comporta como uma lista suspensa comum (abre já mostrando os mais
+    recentes, sempre ordenados por ano fiscal, e filtra ao digitar), mas sem
+    despejar todos os Comunicados de uma vez só num <select> — com dezenas de
+    milhares de registros isso vira uma página de vários MB e trava o
+    carregamento."""
     from comunicados.models import Comunicado
 
     termo = request.GET.get("q", "").strip()
-    comunicados = []
+    comunicados = Comunicado.objects.order_by("-ano_fiscal", "-numero_sequencial")
     if termo:
-        comunicados = Comunicado.objects.filter(
+        comunicados = comunicados.filter(
             Q(cai_fiscal__icontains=termo)
             | Q(cliente__icontains=termo)
             | Q(numero_projeto__icontains=termo)
-        ).order_by("-ano_fiscal", "-numero_sequencial")[:20]
+        )
+    comunicados = comunicados[:30]
     return render(
         request,
         "core/_comunicados_resultado.html",
