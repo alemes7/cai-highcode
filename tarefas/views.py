@@ -19,17 +19,19 @@ from .services import cancelar_tarefa, responder_tarefa
 
 User = get_user_model()
 
-# Chave do filtro/ordenação (GET) -> nome do campo no model, para as telas de Tarefas.
+# Chave do filtro/ordenação (GET) -> campo(s) no model, para as telas de Tarefas.
+# "cai" é composto: numero_sequencial sozinho reinicia a cada ano fiscal, então
+# "137 / 23'24" apareceria antes de "5 / 25'26" se ordenássemos só por ele.
 SORT_CAMPOS = {
-    "cai": "comunicado__numero_sequencial",
-    "departamento": "departamento__nome",
-    "cliente": "comunicado__cliente",
-    "projeto": "comunicado__numero_projeto",
-    "responsavel": "responsavel__first_name",
-    "status": "status",
-    "criado": "criado_em",
-    "conclusao": "data_conclusao",
-    "solicitante": "comunicado__solicitante__first_name",
+    "cai": ["comunicado__ano_fiscal", "comunicado__numero_sequencial"],
+    "departamento": ["departamento__nome"],
+    "cliente": ["comunicado__cliente"],
+    "projeto": ["comunicado__numero_projeto"],
+    "responsavel": ["responsavel__first_name"],
+    "status": ["status"],
+    "criado": ["criado_em"],
+    "conclusao": ["data_conclusao"],
+    "solicitante": ["comunicado__solicitante__first_name"],
 }
 
 
@@ -81,11 +83,13 @@ def _contexto_lista_tarefas(request, tarefas):
 
     sort = request.GET.get("sort", "-cai")
     sort_campo = sort.lstrip("-")
-    campo_model = SORT_CAMPOS.get(sort_campo, "comunicado__numero_sequencial")
+    campos_model = SORT_CAMPOS.get(
+        sort_campo, ["comunicado__ano_fiscal", "comunicado__numero_sequencial"]
+    )
     if sort.startswith("-"):
-        tarefas = tarefas.order_by(f"-{campo_model}", "-id")
+        tarefas = tarefas.order_by(*[f"-{c}" for c in campos_model], "-id")
     else:
-        tarefas = tarefas.order_by(campo_model, "id")
+        tarefas = tarefas.order_by(*campos_model, "id")
 
     paginator = Paginator(tarefas, 25)
     page_obj = paginator.get_page(request.GET.get("page"))
