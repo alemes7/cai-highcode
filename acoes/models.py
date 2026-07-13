@@ -52,6 +52,7 @@ class Acao(TimeStampedModel):
         related_name="acoes_responsavel",
     )
     data_inclusao = models.DateField(auto_now_add=True)
+    data_conclusao = models.DateField(null=True, blank=True)
     observacoes = models.TextField(blank=True)
 
     class Meta:

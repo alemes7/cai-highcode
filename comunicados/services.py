@@ -67,6 +67,27 @@ def criar_comunicado(dados_comunicado, tarefas_data, anexos=None):
     return comunicado
 
 
+def _prioridade_status(statuses):
+    """Núcleo puro da regra de prioridade (ver docstring de calcular_status).
+    Recebe a lista de status de Tarefa já sem as Canceladas. Extraído à parte
+    para o gerador de dados fictícios (management command) poder aplicar a
+    MESMA regra de negócio sobre listas em memória, sem bater no banco —
+    evita que o script de seed divirja da regra real."""
+    if not statuses:
+        return StatusComunicado.PENDENTE
+
+    if StatusTarefa.REJEITADO in statuses:
+        return StatusComunicado.REJEITADO
+
+    if StatusTarefa.PENDENTE in statuses:
+        return StatusComunicado.PENDENTE
+
+    if StatusTarefa.APROVADO_COM_ACOES in statuses:
+        return StatusComunicado.APROVADO_COM_ACOES
+
+    return StatusComunicado.APROVADO
+
+
 def calcular_status(comunicado):
     """Deriva o status do Comunicado a partir do status de suas Tarefas.
 
@@ -88,20 +109,7 @@ def calcular_status(comunicado):
             "status", flat=True
         )
     )
-
-    if not statuses:
-        return StatusComunicado.PENDENTE
-
-    if StatusTarefa.REJEITADO in statuses:
-        return StatusComunicado.REJEITADO
-
-    if StatusTarefa.PENDENTE in statuses:
-        return StatusComunicado.PENDENTE
-
-    if StatusTarefa.APROVADO_COM_ACOES in statuses:
-        return StatusComunicado.APROVADO_COM_ACOES
-
-    return StatusComunicado.APROVADO
+    return _prioridade_status(statuses)
 
 
 def atualizar_status_comunicado(comunicado):

@@ -1,0 +1,21 @@
+<table class="w-full text-sm">
+  <thead>
+    <tr class="text-left border-b bg-slate-50">
+      <th class="p-2">Responsável</th>
+      <th class="p-2">Email</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for usuario in usuarios %}
+      <tr class="border-b hover:bg-sky-50 cursor-pointer"
+          onclick="selecionarResponsavel({{ usuario.pk }}, '{{ usuario.get_full_name|default:usuario.username|escapejs }}')">
+        <td class="p-2">{{ usuario.get_full_name|default:usuario.username }}</td>
+        <td class="p-2">{{ usuario.email|default:"-" }}</td>
+      </tr>
+    {% empty %}
+      {% if termo %}
+        <tr><td colspan="2" class="p-3 text-center text-slate-500">Nenhum responsável encontrado.</td></tr>
+      {% endif %}
+    {% endfor %}
+  </tbody>
+</table>

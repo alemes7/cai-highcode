@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}Departamentos / Aprovadores - ECN{% endblock %}
+{% block content %}
+
+<div class="bg-sky-500 text-white rounded-lg mb-6 px-4 py-3 flex items-center justify-between gap-3">
+  <div class="flex items-center gap-3">
+    <a href="{% url 'core:inicio' %}" title="Início" class="hover:opacity-80">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
+      </svg>
+    </a>
+    <a href="{% url 'core:configuracoes' %}" title="Voltar" class="hover:opacity-80">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+    </a>
+  </div>
+  <h1 class="text-base md:text-lg font-semibold text-center flex-1">Departamentos / Aprovadores</h1>
+  <div class="flex items-center gap-2 text-sm">
+    <button type="button" onclick="document.getElementById('filtros-modal').classList.remove('hidden')"
+            class="bg-violet-600 hover:bg-violet-700 rounded-full px-4 py-1.5 whitespace-nowrap">
+      Filtrar &#9662;
+    </button>
+    <a href="{% url 'core:departamentos_lista' %}" class="bg-sky-700 hover:bg-sky-800 rounded-full px-4 py-1.5 whitespace-nowrap">
+      Atualizar &#8635;
+    </a>
+    <button type="button"
+            hx-get="{% url 'core:departamento_form_novo' %}"
+            hx-target="#departamento-modal-content"
+            hx-swap="innerHTML"
+            hx-on::after-request="document.getElementById('departamento-modal').classList.remove('hidden')"
+            class="bg-green-600 hover:bg-green-700 rounded-full px-4 py-1.5 whitespace-nowrap">
+      Adicionar +
+    </button>
+  </div>
+</div>
+
+<div class="bg-white border rounded-lg overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left border-b bg-slate-50">
+        <th class="p-3"><a href="{{ sort_links.id.url }}" class="hover:underline">ID {{ sort_links.id.seta }}</a></th>
+        <th class="p-3"><a href="{{ sort_links.departamento.url }}" class="hover:underline">Departamento {{ sort_links.departamento.seta }}</a></th>
+        <th class="p-3">Responsáveis</th>
+        <th class="p-3">Responsáveis Em Cópia</th>
+        <th class="p-3">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for departamento in departamentos %}
+        <tr class="border-b hover:bg-slate-50">
+          <td class="p-3">{{ departamento.pk }}</td>
+          <td class="p-3">{{ departamento.nome }}</td>
+          <td class="p-3">
+            {% for u in departamento.responsaveis.all %}{{ u.get_full_name|default:u.username }}{% if not forloop.last %}; {% endif %}{% empty %}-{% endfor %}
+          </td>
+          <td class="p-3">
+            {% for u in departamento.responsaveis_copia.all %}{{ u.get_full_name|default:u.username }}{% if not forloop.last %}; {% endif %}{% empty %}-{% endfor %}
+          </td>
+          <td class="p-3">
+            <div class="flex items-center gap-3">
+              <button type="button" title="Editar"
+                      hx-get="{% url 'core:departamento_form_editar' departamento.pk %}"
+                      hx-target="#departamento-modal-content"
+                      hx-swap="innerHTML"
+                      hx-on::after-request="document.getElementById('departamento-modal').classList.remove('hidden')"
+                      class="text-sky-600 hover:text-sky-800">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                </svg>
+              </button>
+              <button type="button" title="Excluir"
+                      onclick="abrirExcluirModal('{% url 'core:departamento_excluir' departamento.pk %}', '{{ departamento.nome|escapejs }}')"
+                      class="text-red-600 hover:text-red-800">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="p-4 text-center text-slate-500">Nenhum departamento cadastrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div id="filtros-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-lg overflow-hidden">
+    <div class="bg-sky-500 text-white px-5 py-3 flex items-center justify-between">
+      <h2 class="font-semibold">Filtros</h2>
+      <button type="button" onclick="document.getElementById('filtros-modal').classList.add('hidden')"
+              class="w-6 h-6 rounded-full border border-white/60 flex items-center justify-center hover:bg-white/10">
+        &times;
+      </button>
+    </div>
+    <form method="get" class="p-5 space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">ID</label>
+        <div class="flex items-center gap-2">
+          <input type="text" id="f-id" name="id" value="{{ filtros.id }}"
+                 class="flex-1 border border-slate-300 rounded px-3 py-2 bg-slate-50">
+          <button type="button" onclick="document.getElementById('f-id').value=''" title="Limpar" class="text-red-500">&#128465;</button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Departamento</label>
+        <div class="flex items-center gap-2">
+          <select id="f-departamento" name="departamento" class="flex-1 border border-slate-300 rounded px-3 py-2 bg-slate-50">
+            <option value="">- Selecione -</option>
+            {% for d in todos_departamentos %}
+              <option value="{{ d.nome }}" {% if filtros.departamento == d.nome %}selected{% endif %}>{{ d.nome }}</option>
+            {% endfor %}
+          </select>
+          <button type="button" onclick="document.getElementById('f-departamento').value=''" title="Limpar" class="text-red-500">&#128465;</button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Responsável</label>
+        <div class="flex items-center gap-2">
+          <input type="text" id="f-responsavel" name="responsavel" value="{{ filtros.responsavel }}"
+                 class="flex-1 border border-slate-300 rounded px-3 py-2 bg-slate-50">
+          <button type="button" onclick="document.getElementById('f-responsavel').value=''" title="Limpar" class="text-red-500">&#128465;</button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Responsável Em Cópia</label>
+        <div class="flex items-center gap-2">
+          <input type="text" id="f-responsavel-copia" name="responsavel_copia" value="{{ filtros.responsavel_copia }}"
+                 class="flex-1 border border-slate-300 rounded px-3 py-2 bg-slate-50">
+          <button type="button" onclick="document.getElementById('f-responsavel-copia').value=''" title="Limpar" class="text-red-500">&#128465;</button>
+        </div>
+      </div>
+      <div class="flex items-center justify-between pt-2">
+        <a href="{% url 'core:departamentos_lista' %}" class="bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded px-4 py-2">
+          Limpar Filtros
+        </a>
+        <button type="submit" class="bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded px-4 py-2">
+          Aplicar Filtros
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="departamento-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div id="departamento-modal-content"></div>
+  </div>
+</div>
+
+<div id="busca-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-lg overflow-hidden">
+    <div class="px-5 py-3 border-b">
+      <h2 class="text-center font-semibold text-sky-600">Selecione o Responsável/Suplente</h2>
+    </div>
+    <div class="p-5">
+      <label class="block text-sm font-medium mb-1">Nome</label>
+      <input type="text" id="busca-input" name="q" autocomplete="off"
+             class="w-full border border-slate-300 rounded px-3 py-2 bg-slate-50 mb-3"
+             hx-get="{% url 'core:buscar_usuarios' %}"
+             hx-trigger="input changed delay:300ms"
+             hx-target="#busca-resultado"
+             hx-swap="innerHTML">
+      <div id="busca-resultado" class="border rounded max-h-72 overflow-y-auto"></div>
+      <div class="text-right mt-3">
+        <button type="button" onclick="fecharBuscaResponsavel()" class="text-sm text-slate-600 hover:underline">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include "core/_modal_excluir_departamento.html" %}
+
+<script>
+function fecharModalDepartamento() {
+  document.getElementById('departamento-modal').classList.add('hidden');
+}
+
+let campoAlvoBusca = 'responsaveis';
+
+function abrirBuscaResponsavel(campo) {
+  campoAlvoBusca = campo;
+  document.getElementById('busca-input').value = '';
+  document.getElementById('busca-resultado').innerHTML = '';
+  document.getElementById('busca-modal').classList.remove('hidden');
+  document.getElementById('busca-input').focus();
+}
+
+function fecharBuscaResponsavel() {
+  document.getElementById('busca-modal').classList.add('hidden');
+}
+
+function selecionarResponsavel(id, nome) {
+  const containerId = campoAlvoBusca === 'responsaveis' ? 'lista-responsaveis' : 'lista-responsaveis-copia';
+  const container = document.getElementById(containerId);
+  if (!container) { fecharBuscaResponsavel(); return; }
+  if (container.querySelector('[data-user-id="' + id + '"]')) {
+    fecharBuscaResponsavel();
+    return;
+  }
+
+  const linha = document.createElement('div');
+  linha.className = 'flex items-center gap-2 text-sm';
+  linha.dataset.userId = id;
+
+  const botao = document.createElement('button');
+  botao.type = 'button';
+  botao.className = 'text-red-500 hover:text-red-700';
+  botao.title = 'Remover';
+  botao.textContent = '\u{1F5D1}';
+  botao.addEventListener('click', function () { linha.remove(); });
+
+  const span = document.createElement('span');
+  span.textContent = nome;
+
+  const hidden = document.createElement('input');
+  hidden.type = 'hidden';
+  hidden.name = campoAlvoBusca;
+  hidden.value = id;
+
+  linha.appendChild(botao);
+  linha.appendChild(span);
+  linha.appendChild(hidden);
+  container.appendChild(linha);
+  fecharBuscaResponsavel();
+}
+</script>
+{% endblock %}

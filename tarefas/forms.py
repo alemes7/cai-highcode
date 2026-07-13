@@ -91,8 +91,11 @@ class AcaoFormularioForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        if cleaned_data.get("descricao") and not cleaned_data.get("prazo_original"):
-            raise forms.ValidationError("Informe o prazo para a ação.")
+        if cleaned_data.get("descricao"):
+            if not cleaned_data.get("prazo_original"):
+                raise forms.ValidationError("Informe o prazo para a ação.")
+            if not cleaned_data.get("responsavel"):
+                raise forms.ValidationError("Informe o responsável principal para a ação.")
         return cleaned_data
 
 

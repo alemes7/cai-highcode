@@ -4,8 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}ECN{% endblock %}</title>
+<!-- Tailwind Play CDN: compila em runtime, não é compatível com Subresource
+     Integrity (o conteúdo servido varia). Aceitável para uma demo; antes de um
+     uso mais sério, trocar por um build estático do Tailwind. -->
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<script src="https://unpkg.com/htmx.org@1.9.12"
+        integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2"
+        crossorigin="anonymous"></script>
 {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen">

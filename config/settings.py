@@ -13,7 +13,9 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import os
 from pathlib import Path
 
+import dj_database_url
 from celery.schedules import crontab
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,13 +27,44 @@ load_dotenv(BASE_DIR / '.env')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-3#yv7(h^m-4=(+v%dt=68&-gpvdt$)1#dam^c^t!l2np41l$y_')
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
+# SECURITY WARNING: keep the secret key used in production secret!
+# Sem fallback silencioso em produção: se DEBUG=False e ninguém configurou a
+# variável de ambiente, é melhor o app recusar subir do que rodar assinando
+# sessão/CSRF/tokens com uma chave hardcoded e conhecida publicamente.
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-insecure-3#yv7(h^m-4=(+v%dt=68&-gpvdt$)1#dam^c^t!l2np41l$y_'
+    else:
+        raise ImproperlyConfigured(
+            'SECRET_KEY não configurado. Defina a variável de ambiente SECRET_KEY '
+            'antes de rodar com DEBUG=False.'
+        )
+
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if h.strip()]
+
+# Necessário para POST (login, formulários) funcionar quando o site roda atrás
+# de um domínio HTTPS público — sem isso o Django rejeita o CSRF por origem
+# não confiável. Preencher com a URL pública ao hospedar (ex: https://meu-app.onrender.com).
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()
+]
+
+if not DEBUG:
+    # A maioria dos hosts gratuitos (Render, Railway, Fly.io etc.) termina o
+    # HTTPS num proxy na frente e conversa com o Django por HTTP simples — sem
+    # SECURE_PROXY_SSL_HEADER o Django acha que a conexão é insegura e entra
+    # em loop de redirecionamento com SECURE_SSL_REDIRECT.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 
 # Application definition
@@ -43,8 +76,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
-    'corsheaders',
     'django_celery_beat',
     'core',
     'comunicados',
@@ -54,7 +85,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    # Serve os arquivos estáticos direto do processo Django — dispensa um
+    # webserver/CDN separado só pra isso, o que a maioria dos hosts gratuitos
+    # não oferece de graça.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -87,16 +121,24 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'cai_highcode'),
-        'USER': os.environ.get('DB_USER', 'cai_user'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'cai_password'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+# Hosts gratuitos (Render, Railway...) normalmente fornecem uma única
+# DATABASE_URL pronta; localmente seguimos com as variáveis separadas do
+# docker-compose (não tem DATABASE_URL no .env local).
+if os.environ.get('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.config(conn_max_age=600, ssl_require=not DEBUG),
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'cai_highcode'),
+            'USER': os.environ.get('DB_USER', 'cai_user'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'cai_password'),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
+    }
 
 
 # Password validation
@@ -134,6 +176,18 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
+# Destino do `manage.py collectstatic` — necessário pra hospedar (servido pelo
+# WhiteNoise). Não existe localmente até rodar o comando.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -144,21 +198,14 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# CORS (frontend server-rendered no mesmo domínio; liberar localhost para testes de API)
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-]
-
-
-# Django REST Framework
-REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 25,
-}
-
-
 # Celery
+# CELERY_TASK_ALWAYS_EAGER=True roda as tasks (e-mails, verificação de prazo)
+# na hora, dentro do próprio processo web — sem precisar de Redis nem de um
+# worker separado. Usado na demo hospedada de graça; localmente continuamos
+# assíncronos de verdade (Redis via Docker) pra testar o fluxo real.
+CELERY_TASK_ALWAYS_EAGER = os.environ.get('CELERY_TASK_ALWAYS_EAGER', 'False') == 'True'
+CELERY_TASK_EAGER_PROPAGATES = True
+
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/1')
 CELERY_ACCEPT_CONTENT = ['json']

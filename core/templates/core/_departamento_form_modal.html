@@ -1,0 +1,68 @@
+<div class="bg-sky-500 text-white px-5 py-3 flex items-center justify-between">
+  <h2 class="font-semibold">{% if departamento %}Editar{% else %}Criar Novo{% endif %} Departamento / Aprovadores</h2>
+  <button type="button" onclick="fecharModalDepartamento()"
+          class="w-6 h-6 rounded-full border border-white/60 flex items-center justify-center hover:bg-white/10">
+    &times;
+  </button>
+</div>
+<form method="post" action="{{ form_action }}" class="p-5 space-y-4">
+  {% csrf_token %}
+
+  <div>
+    <label class="block text-sm font-medium mb-1">* {{ form.nome.label }}</label>
+    {{ form.nome }}
+    {{ form.nome.errors }}
+  </div>
+
+  <div>
+    <div class="flex items-center justify-between mb-1">
+      <label class="block text-sm font-medium">* Responsáveis Principais</label>
+      <button type="button" onclick="abrirBuscaResponsavel('responsaveis')" class="text-sm text-sky-600 hover:underline">
+        Adicionar +
+      </button>
+    </div>
+    <div id="lista-responsaveis" class="border border-slate-300 rounded p-3 bg-slate-50 min-h-[3rem] space-y-1">
+      {% for usuario in responsaveis_atuais %}
+        <div class="flex items-center gap-2 text-sm" data-user-id="{{ usuario.pk }}">
+          <button type="button" class="text-red-500 hover:text-red-700" title="Remover" onclick="this.closest('[data-user-id]').remove()">&#128465;</button>
+          <span>{{ usuario.get_full_name|default:usuario.username }}</span>
+          <input type="hidden" name="responsaveis" value="{{ usuario.pk }}">
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div>
+    <div class="flex items-center justify-between mb-1">
+      <label class="block text-sm font-medium">Responsáveis Em Cópia</label>
+      <button type="button" onclick="abrirBuscaResponsavel('responsaveis_copia')" class="text-sm text-sky-600 hover:underline">
+        Adicionar +
+      </button>
+    </div>
+    <div id="lista-responsaveis-copia" class="border border-slate-300 rounded p-3 bg-slate-50 min-h-[3rem] space-y-1">
+      {% for usuario in responsaveis_copia_atuais %}
+        <div class="flex items-center gap-2 text-sm" data-user-id="{{ usuario.pk }}">
+          <button type="button" class="text-red-500 hover:text-red-700" title="Remover" onclick="this.closest('[data-user-id]').remove()">&#128465;</button>
+          <span>{{ usuario.get_full_name|default:usuario.username }}</span>
+          <input type="hidden" name="responsaveis_copia" value="{{ usuario.pk }}">
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <label class="relative inline-flex items-center cursor-pointer">
+    {{ form.responsavel_obrigatorio }}
+    <div class="w-11 h-6 bg-slate-300 rounded-full peer-checked:bg-sky-500 transition-colors"></div>
+    <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+    <span class="text-sm font-medium ml-3">{{ form.responsavel_obrigatorio.label }}</span>
+  </label>
+
+  <div class="flex items-center justify-end gap-3 pt-2">
+    <button type="button" onclick="fecharModalDepartamento()" class="bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded px-4 py-2">
+      Cancelar
+    </button>
+    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded px-4 py-2">
+      Enviar
+    </button>
+  </div>
+</form>

@@ -40,6 +40,14 @@ class Departamento(TimeStampedModel):
         blank=True,
         related_name="departamentos_copia",
     )
+    responsavel_obrigatorio = models.BooleanField(
+        default=False,
+        help_text=(
+            "Se marcado, é obrigatório escolher um responsável específico deste "
+            "departamento ao criar Tarefas/Ações; senão, qualquer um dos "
+            "responsáveis cadastrados pode atender."
+        ),
+    )
 
     class Meta:
         ordering = ["nome"]

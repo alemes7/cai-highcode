@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django import forms
 from django.contrib.auth import get_user_model
 from django.forms import formset_factory
@@ -14,6 +16,15 @@ INPUT_CLASSES = (
     "focus:bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
 )
 DISABLED_CLASSES = "w-full border border-slate-300 rounded px-3 py-2 bg-slate-100 text-slate-600"
+
+# Extensões de documento de negócio esperadas para anexos de Comunicado/Tarefa/
+# Ação — bloqueia tipos executáveis/script (ex: .exe, .html, .svg com script
+# embutido) que poderiam ser abertos direto pelo navegador a partir do /media/.
+EXTENSOES_ANEXO_PERMITIDAS = {
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+    ".png", ".jpg", ".jpeg", ".gif", ".txt", ".csv", ".zip", ".msg", ".eml",
+}
+TAMANHO_MAXIMO_ANEXO_MB = 15
 
 
 class MultiFileInput(forms.ClearableFileInput):
@@ -36,7 +47,24 @@ class MultiFileField(forms.FileField):
             if self.required:
                 raise forms.ValidationError(self.error_messages["required"], code="required")
             return []
-        return [single_file_clean(arquivo, initial) for arquivo in data]
+
+        arquivos = []
+        for arquivo in data:
+            single_file_clean(arquivo, initial)
+
+            extensao = Path(arquivo.name).suffix.lower()
+            if extensao not in EXTENSOES_ANEXO_PERMITIDAS:
+                raise forms.ValidationError(
+                    f'Tipo de arquivo não permitido: "{arquivo.name}". '
+                    f"Extensões aceitas: {', '.join(sorted(EXTENSOES_ANEXO_PERMITIDAS))}."
+                )
+            if arquivo.size > TAMANHO_MAXIMO_ANEXO_MB * 1024 * 1024:
+                raise forms.ValidationError(
+                    f'O arquivo "{arquivo.name}" excede o limite de '
+                    f"{TAMANHO_MAXIMO_ANEXO_MB}MB."
+                )
+            arquivos.append(arquivo)
+        return arquivos
 
 
 class ComunicadoForm(forms.Form):
@@ -145,6 +173,18 @@ class TarefaInicialForm(forms.Form):
         label="Comentários e Observações",
         widget=forms.Textarea(attrs={"class": INPUT_CLASSES, "rows": 2}),
     )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        departamento = cleaned_data.get("departamento")
+        if departamento and departamento.responsavel_obrigatorio and not cleaned_data.get(
+            "responsavel_principal"
+        ):
+            self.add_error(
+                "responsavel_principal",
+                f"O departamento {departamento} exige um responsável principal específico.",
+            )
+        return cleaned_data
 
 
 TarefaInicialFormSet = formset_factory(TarefaInicialForm, extra=1)

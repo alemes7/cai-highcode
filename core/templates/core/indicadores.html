@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Indicadores - ECN{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.js"
+        integrity="sha384-hfkuqrKeWFmnTMWN31VWyoe8xgdTADD11kgxmdpx2uyE6j5Az5uZq6u6AKYYmAOw"
+        crossorigin="anonymous"></script>
+{% endblock %}
+{% block content %}
+
+<div class="bg-sky-500 text-white rounded-lg mb-6 px-4 py-3 flex items-center justify-between gap-3">
+  <a href="{% url 'core:inicio' %}" title="Início" class="hover:opacity-80">
+    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
+    </svg>
+  </a>
+  <h1 class="text-base md:text-lg font-semibold text-center flex-1">Indicadores</h1>
+  <div class="w-6"></div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bg-white border rounded-lg p-6">
+    <h2 class="text-center font-semibold text-slate-800 mb-4">Total de normas de clientes emitidas por ano fiscal</h2>
+    <div class="h-72"><canvas id="grafico-normas"></canvas></div>
+  </div>
+  <div class="bg-white border rounded-lg p-6">
+    <h2 class="text-center font-semibold text-slate-800 mb-4">Ações pendentes por área</h2>
+    <div class="h-72"><canvas id="grafico-acoes"></canvas></div>
+  </div>
+  <div class="bg-white border rounded-lg p-6">
+    <h2 class="text-center font-semibold text-slate-800 mb-4">Tarefas por departamento</h2>
+    <div class="h-72"><canvas id="grafico-tarefas"></canvas></div>
+  </div>
+  <div class="bg-white border rounded-lg p-6">
+    <h2 class="text-center font-semibold text-slate-800 mb-4">Tempo médio de análise em dias</h2>
+    <div class="h-72"><canvas id="grafico-tempo"></canvas></div>
+  </div>
+</div>
+
+{{ grafico_normas|json_script:"dados-normas" }}
+{{ grafico_acoes|json_script:"dados-acoes" }}
+{{ grafico_tarefas|json_script:"dados-tarefas" }}
+{{ grafico_tempo|json_script:"dados-tempo" }}
+
+<script>
+(function () {
+  const CORES = {
+    azul: '#2a78d6',
+    laranja: '#eb6834',
+    vermelho: '#e34948',
+    verde: '#0ca30c',
+    critico: '#d03b3b',
+    cinza: '#898781',
+    grade: '#e1e0d9',
+  };
+
+  Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+  Chart.defaults.color = '#52514e';
+
+  const opcoesComuns = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: { beginAtZero: true, grid: { color: CORES.grade } },
+      x: { grid: { display: false } },
+    },
+    plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } } },
+  };
+
+  const dadosNormas = JSON.parse(document.getElementById('dados-normas').textContent);
+  new Chart(document.getElementById('grafico-normas'), {
+    data: {
+      labels: dadosNormas.labels,
+      datasets: [
+        { type: 'bar', label: 'Alteração', data: dadosNormas.alteracao, backgroundColor: CORES.laranja, borderRadius: 3, order: 2 },
+        { type: 'bar', label: 'Introdução', data: dadosNormas.introducao, backgroundColor: CORES.azul, borderRadius: 3, order: 2 },
+        { type: 'line', label: 'Total Comunicados', data: dadosNormas.total, borderColor: CORES.vermelho, backgroundColor: CORES.vermelho, borderWidth: 2, pointRadius: 3, tension: 0.3, order: 1 },
+        { type: 'line', label: 'Em Análise', data: dadosNormas.em_analise, borderColor: CORES.cinza, backgroundColor: CORES.cinza, borderWidth: 2, pointRadius: 3, tension: 0.3, order: 1 },
+      ],
+    },
+    options: opcoesComuns,
+  });
+
+  const dadosAcoes = JSON.parse(document.getElementById('dados-acoes').textContent);
+  new Chart(document.getElementById('grafico-acoes'), {
+    type: 'bar',
+    data: {
+      labels: dadosAcoes.labels,
+      datasets: [
+        { label: 'Atrasado', data: dadosAcoes.atrasado, backgroundColor: CORES.critico, borderRadius: 3 },
+        { label: 'No prazo', data: dadosAcoes.no_prazo, backgroundColor: CORES.verde, borderRadius: 3 },
+      ],
+    },
+    options: opcoesComuns,
+  });
+
+  const dadosTarefas = JSON.parse(document.getElementById('dados-tarefas').textContent);
+  new Chart(document.getElementById('grafico-tarefas'), {
+    type: 'bar',
+    data: {
+      labels: dadosTarefas.labels,
+      datasets: [
+        { label: 'Analisado', data: dadosTarefas.analisado, backgroundColor: CORES.azul, borderRadius: 3 },
+        { label: 'Em análise', data: dadosTarefas.em_analise, backgroundColor: CORES.laranja, borderRadius: 3 },
+      ],
+    },
+    options: opcoesComuns,
+  });
+
+  const dadosTempo = JSON.parse(document.getElementById('dados-tempo').textContent);
+  new Chart(document.getElementById('grafico-tempo'), {
+    data: {
+      labels: dadosTempo.labels,
+      datasets: [
+        { type: 'bar', label: 'Tempo Médio Análise (Dias)', data: dadosTempo.tempo_medio, backgroundColor: CORES.azul, borderRadius: 3, order: 2 },
+        { type: 'line', label: 'Meta Análise (Dias)', data: dadosTempo.labels.map(() => dadosTempo.meta), borderColor: CORES.vermelho, backgroundColor: CORES.vermelho, borderWidth: 2, pointRadius: 3, order: 1 },
+      ],
+    },
+    options: opcoesComuns,
+  });
+})();
+</script>
+{% endblock %}

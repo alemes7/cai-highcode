@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}Painel Administrativo - ECN{% endblock %}
+{% block content %}
+
+<div class="bg-sky-500 text-white rounded-lg mb-6 px-4 py-3 flex items-center justify-between gap-3">
+  <div class="flex items-center gap-3">
+    <a href="{% url 'core:inicio' %}" title="Início" class="hover:opacity-80">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
+      </svg>
+    </a>
+    <a href="{% url 'core:configuracoes' %}" title="Voltar" class="hover:opacity-80">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+    </a>
+  </div>
+  <h1 class="text-base md:text-lg font-semibold text-center flex-1">Painel Administrativo</h1>
+  <div class="w-6"></div>
+</div>
+
+<div class="bg-white border rounded-lg p-6 space-y-6 mb-6">
+  <p class="text-center font-medium text-sky-600">Informações sobre a Solicitação:</p>
+
+  <form method="get">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Número do CAI</label>
+        <select name="comunicado" onchange="this.form.submit()"
+                class="w-full border border-slate-300 rounded px-3 py-2 bg-slate-50">
+          <option value="">- Selecione -</option>
+          {% for c in comunicados %}
+            <option value="{{ c.pk }}" {% if comunicado and comunicado.pk == c.pk %}selected{% endif %}>{{ c.cai_fiscal }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Cliente</label>
+        <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.cliente|default:"-" }}</p>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Status</label>
+        <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.get_status_display|default:"-" }}</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Número</label>
+        <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.numero_projeto|default:"-" }}</p>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Data</label>
+        <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.data_criacao|date:"d/m/Y"|default:"-" }}</p>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Revisão</label>
+        <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.revisao|default:"-" }}</p>
+      </div>
+    </div>
+  </form>
+
+  <div>
+    <p class="text-center font-medium text-sky-600 mb-2">Informações sobre as Tarefas:</p>
+    <div class="border rounded max-h-64 overflow-y-auto">
+      <table class="w-full text-sm">
+        <thead class="sticky top-0 bg-slate-50">
+          <tr class="text-left border-b">
+            <th class="p-2">Departamento</th>
+            <th class="p-2">Responsável Principal</th>
+            <th class="p-2">Status</th>
+            <th class="p-2">Data de Conclusão</th>
+            <th class="p-2">Observações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tarefa in tarefas %}
+            <tr class="border-b">
+              <td class="p-2">{{ tarefa.departamento }}</td>
+              <td class="p-2">{{ tarefa.responsavel|default:"-" }}</td>
+              <td class="p-2">{{ tarefa.get_status_display }}</td>
+              <td class="p-2">{{ tarefa.data_conclusao|date:"d/m/Y"|default:"-" }}</td>
+              <td class="p-2 max-w-xs truncate" title="{{ tarefa.observacoes }}">{{ tarefa.observacoes|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="p-3 text-center text-slate-500">{% if comunicado %}Nenhuma tarefa.{% else %}Selecione um CAI acima.{% endif %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <p class="text-center font-medium text-sky-600 mb-2">Informações sobre as Ações:</p>
+    <div class="border rounded max-h-64 overflow-y-auto">
+      <table class="w-full text-sm">
+        <thead class="sticky top-0 bg-slate-50">
+          <tr class="text-left border-b">
+            <th class="p-2">Ação Requerida</th>
+            <th class="p-2">Responsável Principal</th>
+            <th class="p-2">Status</th>
+            <th class="p-2">Prazo</th>
+            <th class="p-2">Observações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for acao in acoes %}
+            <tr class="border-b">
+              <td class="p-2 max-w-xs truncate" title="{{ acao.descricao }}">{{ acao.descricao }}</td>
+              <td class="p-2">
+                <button type="button"
+                        onclick="abrirAlterarResponsavel({{ acao.pk }}, {{ comunicado.pk }}, {{ acao.responsavel_id|default:'null' }}, '{{ acao.responsavel|default:""|escapejs }}')"
+                        class="text-sky-600 hover:underline">
+                  {{ acao.responsavel|default:"- Selecione -" }}
+                </button>
+              </td>
+              <td class="p-2">{{ acao.get_status_display }}</td>
+              <td class="p-2">{{ acao.prazo_efetivo|date:"d/m/Y" }}</td>
+              <td class="p-2 max-w-xs truncate" title="{{ acao.observacoes }}">{{ acao.observacoes|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="p-3 text-center text-slate-500">{% if comunicado %}Nenhuma ação.{% else %}Selecione um CAI acima.{% endif %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="flex flex-wrap gap-3 justify-between">
+  <button type="button"
+          {% if comunicado and comunicado.status == "PENDENTE" %}
+          onclick="abrirCancelarModal('{% url 'comunicados:cancelar' comunicado.pk %}', '{{ comunicado.cai_fiscal|escapejs }}')"
+          {% else %}
+          disabled
+          {% endif %}
+          class="bg-red-700 hover:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-full px-6 py-2">
+    Cancelar Comunicado
+  </button>
+  <a href="{% url 'tarefas:listar_abertas' %}" class="bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-full px-6 py-2 text-center">
+    Visualizar Lista de Tarefas
+  </a>
+  <a href="{% url 'core:departamentos_lista' %}" class="bg-slate-500 hover:bg-slate-600 text-white text-sm font-medium rounded-full px-6 py-2 text-center">
+    Visualizar Departamentos
+  </a>
+  <a href="{% url 'acoes:listar_abertas' %}" class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-full px-6 py-2 text-center">
+    Visualizar Lista de Ações
+  </a>
+</div>
+
+{% if comunicado %}{% include "comunicados/_modal_cancelar.html" %}{% endif %}
+
+<div id="alterar-responsavel-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md overflow-hidden">
+    <div class="px-5 py-3 border-b">
+      <h2 class="text-center font-semibold text-sky-600">Alterar Responsável</h2>
+    </div>
+    <form id="alterar-responsavel-form" method="post" action="{% url 'core:alterar_responsavel_acao' %}" class="p-5 space-y-4">
+      {% csrf_token %}
+      <input type="hidden" name="acao_id" id="alterar-acao-id">
+      <input type="hidden" name="comunicado_id" id="alterar-comunicado-id">
+      <input type="hidden" name="responsavel_id" id="alterar-responsavel-id">
+      <p class="text-sm text-slate-600">Selecione abaixo o usuário que deseja alterar</p>
+      <div>
+        <label class="block text-sm font-medium mb-1">* Usuário</label>
+        <button type="button" onclick="abrirBuscaAlterarResponsavel()"
+                id="alterar-responsavel-label"
+                class="w-full text-left border border-slate-300 rounded px-3 py-2 bg-slate-50 text-slate-600 hover:bg-slate-100">
+          - Selecione -
+        </button>
+      </div>
+      <div class="flex items-center justify-center gap-3 pt-2">
+        <button type="button" onclick="fecharAlterarResponsavel()" class="bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded px-6 py-2">
+          Voltar
+        </button>
+        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded px-6 py-2">
+          Confirmar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="busca-responsavel-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-lg overflow-hidden">
+    <div class="px-5 py-3 border-b">
+      <h2 class="text-center font-semibold text-sky-600">Selecione um Responsável</h2>
+    </div>
+    <div class="p-5">
+      <label class="block text-sm font-medium mb-1">Nome</label>
+      <input type="text" id="busca-input" placeholder="Digite para buscar um nome..." autocomplete="off"
+             class="w-full border border-slate-300 rounded px-3 py-2 bg-slate-50 mb-3"
+             hx-get="{% url 'core:buscar_usuarios' %}"
+             hx-trigger="input changed delay:300ms"
+             hx-target="#busca-resultado"
+             hx-swap="innerHTML">
+      <div id="busca-resultado" class="border rounded max-h-72 overflow-y-auto"></div>
+      <div class="text-right mt-3">
+        <button type="button" onclick="fecharBuscaAlterarResponsavel()" class="text-sm text-slate-600 hover:underline">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function abrirAlterarResponsavel(acaoId, comunicadoId, responsavelIdAtual, nomeAtual) {
+  document.getElementById('alterar-acao-id').value = acaoId;
+  document.getElementById('alterar-comunicado-id').value = comunicadoId;
+  document.getElementById('alterar-responsavel-id').value = responsavelIdAtual || '';
+  document.getElementById('alterar-responsavel-label').textContent = nomeAtual || '- Selecione -';
+  document.getElementById('alterar-responsavel-modal').classList.remove('hidden');
+}
+function fecharAlterarResponsavel() {
+  document.getElementById('alterar-responsavel-modal').classList.add('hidden');
+}
+function abrirBuscaAlterarResponsavel() {
+  document.getElementById('busca-input').value = '';
+  document.getElementById('busca-resultado').innerHTML = '';
+  document.getElementById('busca-responsavel-modal').classList.remove('hidden');
+  document.getElementById('busca-input').focus();
+}
+function fecharBuscaAlterarResponsavel() {
+  document.getElementById('busca-responsavel-modal').classList.add('hidden');
+}
+function selecionarResponsavel(id, nome) {
+  document.getElementById('alterar-responsavel-id').value = id;
+  document.getElementById('alterar-responsavel-label').textContent = nome;
+  document.getElementById('busca-responsavel-modal').classList.add('hidden');
+}
+</script>
+{% endblock %}

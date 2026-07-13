@@ -169,6 +169,9 @@
 
   <div class="bg-white border rounded-lg p-6">
     <label class="block text-sm font-medium mb-2">Anexos</label>
+    {% if form.anexos.errors %}
+      <p class="text-red-600 text-sm mb-2">{{ form.anexos.errors.0 }}</p>
+    {% endif %}
     <div class="border border-slate-200 rounded p-4 bg-slate-50">
       <p id="anexos-vazio" class="text-sm text-slate-500 mb-2">Nenhum arquivo anexado.</p>
       <ul id="anexos-lista" class="text-sm text-slate-700 mb-2 list-disc list-inside"></ul>

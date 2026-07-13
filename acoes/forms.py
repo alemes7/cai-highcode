@@ -1,10 +1,13 @@
 from django import forms
 
-from comunicados.forms import MultiFileField
+from comunicados.forms import MultiFileField, MultiFileInput
 
 from .models import StatusAcao
 
-INPUT_CLASSES = "w-full border rounded px-3 py-2"
+INPUT_CLASSES = (
+    "w-full border border-slate-300 rounded px-3 py-2 bg-slate-50 "
+    "focus:bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
+)
 
 
 class ConcluirAcaoForm(forms.Form):
@@ -35,4 +38,8 @@ class ConcluirAcaoForm(forms.Form):
         label="Observações Adicionais",
         widget=forms.Textarea(attrs={"class": INPUT_CLASSES, "rows": 2}),
     )
-    anexos = MultiFileField(required=False, label="Anexos")
+    anexos = MultiFileField(
+        required=False,
+        label="Anexos",
+        widget=MultiFileInput(attrs={"class": "hidden", "onchange": "atualizarAnexos(this)"}),
+    )

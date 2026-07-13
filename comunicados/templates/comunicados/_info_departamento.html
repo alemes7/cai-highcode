@@ -5,4 +5,7 @@
   <p><span class="font-medium">Responsáveis em cópia:</span>
     {% for u in departamento.responsaveis_copia.all %}{{ u.get_full_name|default:u.username }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
   </p>
+  {% if departamento.responsavel_obrigatorio %}
+    <p class="text-red-600 font-medium">* Este departamento exige um Responsável Principal específico.</p>
+  {% endif %}
 {% endif %}

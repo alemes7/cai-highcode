@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 
+from core.decorators import admin_required
 from core.models import Departamento
 
 from .forms import ComunicadoForm, TarefaInicialForm, TarefaInicialFormSet
@@ -29,6 +30,7 @@ SORT_CAMPOS = {
 
 
 @login_required
+@admin_required
 def novo_comunicado(request):
     if request.method == "POST":
         form = ComunicadoForm(request.POST, request.FILES)
