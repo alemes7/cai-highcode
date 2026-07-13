@@ -22,42 +22,37 @@
 <div class="bg-white border rounded-lg p-6 space-y-6 mb-6">
   <p class="text-center font-medium text-sky-600">Informações sobre a Solicitação:</p>
 
-  <form method="get">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-      <div>
-        <label class="block text-xs text-slate-500 mb-1">Número do CAI</label>
-        <select name="comunicado" onchange="this.form.submit()"
-                class="w-full border border-slate-300 rounded px-3 py-2 bg-slate-50">
-          <option value="">- Selecione -</option>
-          {% for c in comunicados %}
-            <option value="{{ c.pk }}" {% if comunicado and comunicado.pk == c.pk %}selected{% endif %}>{{ c.cai_fiscal }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs text-slate-500 mb-1">Cliente</label>
-        <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.cliente|default:"-" }}</p>
-      </div>
-      <div>
-        <label class="block text-xs text-slate-500 mb-1">Status</label>
-        <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.get_status_display|default:"-" }}</p>
-      </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Número do CAI</label>
+      <button type="button" onclick="abrirBuscaComunicado()"
+              class="w-full text-left border border-slate-300 rounded px-3 py-2 bg-slate-50 hover:bg-slate-100">
+        {{ comunicado.cai_fiscal|default:"- Selecione -" }}
+      </button>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div>
-        <label class="block text-xs text-slate-500 mb-1">Número</label>
-        <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.numero_projeto|default:"-" }}</p>
-      </div>
-      <div>
-        <label class="block text-xs text-slate-500 mb-1">Data</label>
-        <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.data_criacao|date:"d/m/Y"|default:"-" }}</p>
-      </div>
-      <div>
-        <label class="block text-xs text-slate-500 mb-1">Revisão</label>
-        <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.revisao|default:"-" }}</p>
-      </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Cliente</label>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.cliente|default:"-" }}</p>
     </div>
-  </form>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Status</label>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.get_status_display|default:"-" }}</p>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Número</label>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.numero_projeto|default:"-" }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Data</label>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.data_criacao|date:"d/m/Y"|default:"-" }}</p>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Revisão</label>
+      <p class="border border-slate-300 rounded px-3 py-2 bg-slate-100">{{ comunicado.revisao|default:"-" }}</p>
+    </div>
+  </div>
 
   <div>
     <p class="text-center font-medium text-sky-600 mb-2">Informações sobre as Tarefas:</p>
@@ -180,6 +175,27 @@
   </div>
 </div>
 
+<div id="busca-comunicado-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-lg overflow-hidden">
+    <div class="px-5 py-3 border-b">
+      <h2 class="text-center font-semibold text-sky-600">Selecione o Comunicado (CAI)</h2>
+    </div>
+    <div class="p-5">
+      <label class="block text-sm font-medium mb-1">Número do CAI ou Cliente</label>
+      <input type="text" id="busca-comunicado-input" placeholder="Digite para buscar..." autocomplete="off"
+             class="w-full border border-slate-300 rounded px-3 py-2 bg-slate-50 mb-3"
+             hx-get="{% url 'core:buscar_comunicados' %}"
+             hx-trigger="input changed delay:300ms"
+             hx-target="#busca-comunicado-resultado"
+             hx-swap="innerHTML">
+      <div id="busca-comunicado-resultado" class="border rounded max-h-72 overflow-y-auto"></div>
+      <div class="text-right mt-3">
+        <button type="button" onclick="fecharBuscaComunicado()" class="text-sm text-slate-600 hover:underline">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="busca-responsavel-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
   <div class="bg-white rounded-lg shadow-lg w-full max-w-lg overflow-hidden">
     <div class="px-5 py-3 border-b">
@@ -202,6 +218,19 @@
 </div>
 
 <script>
+function abrirBuscaComunicado() {
+  document.getElementById('busca-comunicado-input').value = '';
+  document.getElementById('busca-comunicado-resultado').innerHTML = '';
+  document.getElementById('busca-comunicado-modal').classList.remove('hidden');
+  document.getElementById('busca-comunicado-input').focus();
+}
+function fecharBuscaComunicado() {
+  document.getElementById('busca-comunicado-modal').classList.add('hidden');
+}
+function selecionarComunicado(id) {
+  window.location.href = '?comunicado=' + id;
+}
+
 function abrirAlterarResponsavel(acaoId, comunicadoId, responsavelIdAtual, nomeAtual) {
   document.getElementById('alterar-acao-id').value = acaoId;
   document.getElementById('alterar-comunicado-id').value = comunicadoId;

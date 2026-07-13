@@ -1,12 +1,12 @@
-from collections import defaultdict
 from datetime import date
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Avg, Count, DateField, DurationField, ExpressionWrapper, F, Q
 from django.db.models.deletion import ProtectedError
+from django.db.models.functions import Cast
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.static import serve as django_serve
@@ -24,7 +24,19 @@ META_DIAS_ANALISE = 10
 
 @login_required
 def inicio(request):
-    return render(request, "core/inicio.html")
+    from acoes.models import Acao
+    from comunicados.models import Comunicado
+    from tarefas.models import Tarefa
+
+    return render(
+        request,
+        "core/inicio.html",
+        {
+            "total_comunicados": f"{Comunicado.objects.count():,}".replace(",", "."),
+            "total_tarefas": f"{Tarefa.objects.count():,}".replace(",", "."),
+            "total_acoes": f"{Acao.objects.count():,}".replace(",", "."),
+        },
+    )
 
 
 @login_required
@@ -37,77 +49,88 @@ def media_privado(request, path):
     return django_serve(request, path, document_root=settings.MEDIA_ROOT)
 
 
-def _ordenar_ano_fiscal(ano_fiscal):
-    # "25'26" -> 25, só para ordenar os rótulos cronologicamente no gráfico.
-    return int(ano_fiscal.split("'")[0])
-
-
 @login_required
 def indicadores(request):
+    """Todos os 4 gráficos são resolvidos com agregação no banco (Count/Avg com
+    GROUP BY) em vez de trazer os registros pra Python e somar um por um — com
+    dezenas de milhares de Tarefas/Ações, materializar cada linha como objeto
+    Django antes de simplesmente contar é o que deixava essa tela lenta."""
     from acoes.models import Acao, StatusAcao
     from comunicados.models import Comunicado, StatusComunicado, TipoComunicado
     from tarefas.models import StatusTarefa, Tarefa
 
-    anos_fiscais = sorted(
-        Comunicado.objects.order_by().values_list("ano_fiscal", flat=True).distinct(),
-        key=_ordenar_ano_fiscal,
+    # --- Gráfico 1: normas por ano fiscal — 1 query agrupando por ano_fiscal.
+    # ano_fiscal já é "25'26" etc (2 dígitos com zero à esquerda), então a
+    # ordenação alfabética do banco já é cronológica, sem precisar de _ordenar_ano_fiscal.
+    por_ano = list(
+        Comunicado.objects.values("ano_fiscal")
+        .annotate(
+            alteracao=Count("id", filter=Q(tipo=TipoComunicado.ALTERACAO)),
+            introducao=Count("id", filter=Q(tipo=TipoComunicado.INTRODUCAO)),
+            total=Count("id"),
+            em_analise=Count("id", filter=Q(status=StatusComunicado.PENDENTE)),
+        )
+        .order_by("ano_fiscal")
     )
-    grafico_normas = {"labels": anos_fiscais, "alteracao": [], "introducao": [], "total": [], "em_analise": []}
-    for ano in anos_fiscais:
-        comunicados_ano = Comunicado.objects.filter(ano_fiscal=ano)
-        grafico_normas["alteracao"].append(
-            comunicados_ano.filter(tipo=TipoComunicado.ALTERACAO).count()
-        )
-        grafico_normas["introducao"].append(
-            comunicados_ano.filter(tipo=TipoComunicado.INTRODUCAO).count()
-        )
-        grafico_normas["total"].append(comunicados_ano.count())
-        grafico_normas["em_analise"].append(
-            comunicados_ano.filter(status=StatusComunicado.PENDENTE).count()
-        )
+    grafico_normas = {
+        "labels": [row["ano_fiscal"] for row in por_ano],
+        "alteracao": [row["alteracao"] for row in por_ano],
+        "introducao": [row["introducao"] for row in por_ano],
+        "total": [row["total"] for row in por_ano],
+        "em_analise": [row["em_analise"] for row in por_ano],
+    }
 
+    # --- Gráfico 2: Ações pendentes por área (atrasado vs no prazo) — 1 query.
     hoje = date.today()
-    contagem_acoes = defaultdict(lambda: {"atrasado": 0, "no_prazo": 0})
-    for acao in Acao.objects.filter(status=StatusAcao.PENDENTE).select_related("departamento"):
-        chave = "atrasado" if acao.prazo_efetivo < hoje else "no_prazo"
-        contagem_acoes[acao.departamento.nome][chave] += 1
-    departamentos_acoes = sorted(
-        contagem_acoes,
-        key=lambda d: contagem_acoes[d]["atrasado"] + contagem_acoes[d]["no_prazo"],
-        reverse=True,
+    atrasada = Q(prazo_reajustado__isnull=False, prazo_reajustado__lt=hoje) | Q(
+        prazo_reajustado__isnull=True, prazo_original__lt=hoje
+    )
+    por_dept_acoes = list(
+        Acao.objects.filter(status=StatusAcao.PENDENTE)
+        .values("departamento__nome")
+        .annotate(atrasado=Count("id", filter=atrasada), total=Count("id"))
+        .order_by("-total")
     )
     grafico_acoes = {
-        "labels": departamentos_acoes,
-        "atrasado": [contagem_acoes[d]["atrasado"] for d in departamentos_acoes],
-        "no_prazo": [contagem_acoes[d]["no_prazo"] for d in departamentos_acoes],
+        "labels": [row["departamento__nome"] for row in por_dept_acoes],
+        "atrasado": [row["atrasado"] for row in por_dept_acoes],
+        "no_prazo": [row["total"] - row["atrasado"] for row in por_dept_acoes],
     }
 
-    contagem_tarefas = defaultdict(lambda: {"analisado": 0, "em_analise": 0})
-    for tarefa in Tarefa.objects.select_related("departamento"):
-        chave = "em_analise" if tarefa.status == StatusTarefa.PENDENTE else "analisado"
-        contagem_tarefas[tarefa.departamento.nome][chave] += 1
-    departamentos_tarefas = sorted(
-        contagem_tarefas,
-        key=lambda d: contagem_tarefas[d]["analisado"] + contagem_tarefas[d]["em_analise"],
-        reverse=True,
+    # --- Gráfico 3: Tarefas por departamento (analisado vs em análise) — 1 query.
+    por_dept_tarefas = list(
+        Tarefa.objects.values("departamento__nome")
+        .annotate(
+            em_analise=Count("id", filter=Q(status=StatusTarefa.PENDENTE)),
+            total=Count("id"),
+        )
+        .order_by("-total")
     )
     grafico_tarefas = {
-        "labels": departamentos_tarefas,
-        "analisado": [contagem_tarefas[d]["analisado"] for d in departamentos_tarefas],
-        "em_analise": [contagem_tarefas[d]["em_analise"] for d in departamentos_tarefas],
+        "labels": [row["departamento__nome"] for row in por_dept_tarefas],
+        "analisado": [row["total"] - row["em_analise"] for row in por_dept_tarefas],
+        "em_analise": [row["em_analise"] for row in por_dept_tarefas],
     }
 
-    soma_dias = defaultdict(lambda: [0, 0])
-    for tarefa in Tarefa.objects.filter(data_conclusao__isnull=False).select_related("departamento"):
-        dias = (tarefa.data_conclusao - tarefa.criado_em.date()).days
-        soma_dias[tarefa.departamento.nome][0] += dias
-        soma_dias[tarefa.departamento.nome][1] += 1
-    departamentos_tempo = sorted(
-        soma_dias, key=lambda d: soma_dias[d][0] / soma_dias[d][1], reverse=True
+    # --- Gráfico 4: tempo médio de análise (dias) por departamento — 1 query,
+    # com o AVG(data_conclusao - criado_em) calculado pelo Postgres.
+    por_dept_tempo = list(
+        Tarefa.objects.filter(data_conclusao__isnull=False)
+        .annotate(
+            dias=ExpressionWrapper(
+                F("data_conclusao") - Cast("criado_em", output_field=DateField()),
+                output_field=DurationField(),
+            )
+        )
+        .values("departamento__nome")
+        .annotate(tempo_medio=Avg("dias"))
+        .order_by("-tempo_medio")
     )
     grafico_tempo = {
-        "labels": departamentos_tempo,
-        "tempo_medio": [round(soma_dias[d][0] / soma_dias[d][1], 1) for d in departamentos_tempo],
+        "labels": [row["departamento__nome"] for row in por_dept_tempo],
+        "tempo_medio": [
+            round(row["tempo_medio"].total_seconds() / 86400, 1) for row in por_dept_tempo
+        ],
         "meta": META_DIAS_ANALISE,
     }
 
@@ -301,11 +324,33 @@ def buscar_usuarios(request):
 
 @login_required
 @admin_required
-def painel_administrativo(request):
-    from acoes.models import Acao
+def buscar_comunicados(request):
+    """Endpoint HTMX do seletor "Número do CAI" do Painel Administrativo —
+    busca ao vivo em vez de carregar todos os Comunicados num <select> só
+    (com dezenas de milhares de registros isso vira uma página de vários
+    MB e trava o carregamento)."""
     from comunicados.models import Comunicado
 
-    comunicados = Comunicado.objects.order_by("-numero_sequencial")
+    termo = request.GET.get("q", "").strip()
+    comunicados = []
+    if termo:
+        comunicados = Comunicado.objects.filter(
+            Q(cai_fiscal__icontains=termo)
+            | Q(cliente__icontains=termo)
+            | Q(numero_projeto__icontains=termo)
+        ).order_by("-ano_fiscal", "-numero_sequencial")[:20]
+    return render(
+        request,
+        "core/_comunicados_resultado.html",
+        {"comunicados": comunicados, "termo": termo},
+    )
+
+
+@login_required
+@admin_required
+def painel_administrativo(request):
+    from comunicados.models import Comunicado
+
     comunicado = None
     tarefas = []
     acoes = []
@@ -327,7 +372,6 @@ def painel_administrativo(request):
         request,
         "core/painel_administrativo.html",
         {
-            "comunicados": comunicados,
             "comunicado": comunicado,
             "tarefas": tarefas,
             "acoes": acoes,

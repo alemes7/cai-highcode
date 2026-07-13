@@ -1,0 +1,23 @@
+<table class="w-full text-sm">
+  <thead>
+    <tr class="text-left border-b bg-slate-50">
+      <th class="p-2">Número do CAI</th>
+      <th class="p-2">Cliente</th>
+      <th class="p-2">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for comunicado in comunicados %}
+      <tr class="border-b hover:bg-sky-50 cursor-pointer"
+          onclick="selecionarComunicado({{ comunicado.pk }})">
+        <td class="p-2 text-sky-700 font-medium">{{ comunicado.cai_fiscal }}</td>
+        <td class="p-2">{{ comunicado.cliente }}</td>
+        <td class="p-2">{{ comunicado.get_status_display }}</td>
+      </tr>
+    {% empty %}
+      {% if termo %}
+        <tr><td colspan="3" class="p-3 text-center text-slate-500">Nenhum Comunicado encontrado.</td></tr>
+      {% endif %}
+    {% endfor %}
+  </tbody>
+</table>

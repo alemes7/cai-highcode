@@ -43,6 +43,11 @@ urlpatterns = [
     ),
     path("configuracoes/painel/", views.painel_administrativo, name="painel_administrativo"),
     path(
+        "configuracoes/painel/buscar-comunicados/",
+        views.buscar_comunicados,
+        name="buscar_comunicados",
+    ),
+    path(
         "configuracoes/painel/alterar-responsavel/",
         views.alterar_responsavel_acao,
         name="alterar_responsavel_acao",
